@@ -197,7 +197,7 @@ function registerCLITools() {
             : "";
 
         // Generate the file content directly for consistency
-        const content = `import AgentKit from "../core/agent-kit";
+        const content = `import AgentKit from "../core/agent-kit.js";
 
 /**
  * ${description}

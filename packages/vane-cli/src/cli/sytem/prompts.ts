@@ -61,8 +61,7 @@ When creating a tool implementation:
 
 1. WRITE DIRECT CODE that uses the parameters directly
 2. DO NOT create nested function definitions
-3. Include proper error handling with try/catch where appropriate
-4. End your implementation with a return statement in this format:
+3. End your implementation with a return statement in this format:
 
 return {
  status: "success",
