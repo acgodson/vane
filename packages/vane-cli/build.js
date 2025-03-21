@@ -46,7 +46,6 @@ esbuild
       "tty",
       "os",
       "crypto",
-      "@bnb-chain/*",
       "axios",
     ],
   })

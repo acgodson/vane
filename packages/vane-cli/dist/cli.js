@@ -38576,10 +38576,10 @@ Available commands:
 async function main() {
   console.log(`
   \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
-  \u2551              VANE CLI             \u2551
+  \u2551              VANE CLI                 \u2551
   \u2551                                       \u2551
   \u2551  Build, manage and deploy AI agents   \u2551
-  \u2551  with decentralized storage on BNB    \u2551
+  \u2551                                       \u2551
   \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D
 `);
   const existingConfig = loadConfig();

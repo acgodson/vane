@@ -296,10 +296,10 @@ Available commands:
 async function main() {
   console.log(`
   ╔═══════════════════════════════════════╗
-  ║              VANE CLI             ║
+  ║              VANE CLI                 ║
   ║                                       ║
   ║  Build, manage and deploy AI agents   ║
-  ║  with decentralized storage on BNB    ║
+  ║                                       ║
   ╚═══════════════════════════════════════╝
 `);
   const existingConfig = loadConfig();
