@@ -1,0 +1,35 @@
+{
+  "manifest": {
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "arn:aws:lambda:eu-west-1:203918872321:function:b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c:Release_0"
+        },
+        "regions": {
+          "EU": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:eu-west-1:203918872321:function:b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c:Release_0"
+            }
+          },
+          "NA": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-east-1:203918872321:function:b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c:Release_0"
+            }
+          },
+          "FE": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-west-2:203918872321:function:b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c:Release_0"
+            }
+          }
+        }
+      }
+    },
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "name": "vane wallet"
+        }
+      }
+    }
+  }
+}

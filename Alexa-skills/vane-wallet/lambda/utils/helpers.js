@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 const axios = require("axios");
 
 // AWS services setup
-const secretsManager = new AWS.SecretsManager();
+const SKILL_ID = "amzn1.ask.skill.b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c";
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 // Base URLs
@@ -29,46 +29,29 @@ const TRIVIA_QUESTIONS = [
 ];
 
 async function getSecrets(secretName) {
-  if (
-    process.env.NODE_ENV === "development" ||
-    process.env.NODE_ENV === "local"
-  ) {
-    console.log(
-      `Loading secrets for ${secretName} from local environment variables`
-    );
-    const secretMappings = {
-      PrivyWalletCredentials: {
-        appId: process.env.PRIVY_APP_ID,
-        appSecret: process.env.PRIVY_APP_SECRET,
-        policyId: process.env.PRIVY_POLICY_ID,
-      },
-    };
-    // Return the mapped secrets if they exist
-    if (secretMappings[secretName]) {
-      return secretMappings[secretName];
-    } else {
-      throw new Error(
-        `Secret mapping for ${secretName} not found in local environment`
-      );
-    }
+  console.log(
+    `Loading secrets for ${secretName} from local environment variables`
+  );
+  const secretMappings = {
+    PrivyWalletCredentials: {
+      appId: process.env.PRIVY_APP_ID,
+      appSecret: process.env.PRIVY_APP_SECRET,
+    },
+  };
+  // Return the mapped secrets if they exist
+  if (secretMappings[secretName]) {
+    return secretMappings[secretName];
   } else {
-    // Production flow - use AWS Secrets Manager
-    try {
-      const data = await secretsManager
-        .getSecretValue({ SecretId: secretName })
-        .promise();
-      return JSON.parse(data.SecretString);
-    } catch (error) {
-      console.error("Error retrieving secrets from AWS:", error);
-      throw error;
-    }
+    throw new Error(
+      `Secret mapping for ${secretName} not found in local environment`
+    );
   }
 }
 
 async function getUserWalletId(userId) {
   try {
     const params = {
-      TableName: "AlexaWalletUsers",
+      TableName: `AlexaWalletUsers-${SKILL_ID}`,
       Key: { userId: userId },
     };
 
@@ -148,7 +131,7 @@ async function getWalletPolicyId(userId) {
 async function getUserTrivia(userId) {
   try {
     // In a production version, we would retrieve from DynamoDB
-    // For the demo, we'll use the hard-coded questions
+    // For the hackathon demo, we are using hard-coded questions
 
     // Get random question from the array
     const randomIndex = Math.floor(Math.random() * TRIVIA_QUESTIONS.length);
@@ -180,7 +163,7 @@ async function verifyUserTrivia(userId, answer, currentQuestion) {
 async function getAddressBook(userId) {
   try {
     const params = {
-      TableName: "AlexaWalletAddressBook",
+      TableName: `AlexaWalletAddressBook-${SKILL_ID}`,
       Key: { userId: userId },
     };
 

@@ -45,11 +45,7 @@
             },
             {
               "name": "recipient",
-              "type": "AMAZON.SearchQuery"
-            },
-            {
-              "name": "answer",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.FirstName"
             }
           ],
           "samples": [
@@ -90,7 +86,7 @@
           "slots": [
             {
               "name": "nickname",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.FirstName"
             }
           ],
           "samples": [
@@ -108,15 +104,15 @@
           "slots": [
             {
               "name": "contactName",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.FirstName"
             }
           ],
           "samples": [
-            "show {contactName}'s address",
-            "what's {contactName}'s address",
-            "display {contactName}'s wallet",
-            "show me {contactName}'s wallet address",
-            "get {contactName}'s address"
+            "show {contactName} address",
+            "what is {contactName} address",
+            "display {contactName} wallet",
+            "show me {contactName} wallet address",
+            "get {contactName} address"
           ]
         },
         {
@@ -124,7 +120,7 @@
           "slots": [
             {
               "name": "answer",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.FirstName"
             }
           ],
           "samples": [
@@ -146,7 +142,7 @@
           "slots": [
             {
               "name": "contactName",
-              "type": "AMAZON.SearchQuery",
+              "type": "AMAZON.FirstName",
               "confirmationRequired": false,
               "elicitationRequired": true,
               "prompts": {
@@ -171,16 +167,39 @@
             },
             {
               "name": "recipient",
-              "type": "AMAZON.SearchQuery",
+              "type": "AMAZON.FirstName",
               "confirmationRequired": false,
               "elicitationRequired": true,
               "prompts": {
                 "elicitation": "Elicit.Slot.SendTransactionIntent.recipient"
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "AddAddressIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "nickname",
+              "type": "AMAZON.FirstName",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.AddAddressIntent.nickname"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AnswerIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
             {
               "name": "answer",
-              "type": "AMAZON.SearchQuery",
+              "type": "AMAZON.FirstName",
               "confirmationRequired": false,
               "elicitationRequired": false,
               "prompts": {}
@@ -227,6 +246,19 @@
           {
             "type": "PlainText",
             "value": "Please tell me the recipient's name or address."
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.AddAddressIntent.nickname",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What name would you like to give this contact?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Please provide a name for this contact."
           }
         ]
       }
