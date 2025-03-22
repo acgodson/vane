@@ -4,6 +4,7 @@
   "description": "Alexa skill for Vane Wallet with Privy.io integration",
   "main": "index.js",
   "scripts": {
+    "reset-agent": "node ./utils/reset-agent.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Amazon Alexa",

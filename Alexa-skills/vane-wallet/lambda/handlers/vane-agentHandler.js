@@ -1,5 +1,5 @@
 // Default placeholder for Vane agent handler
-// This file is always replaced during actual agent deployment
+// This file will be replaced during agent deployment
 const Alexa = require("ask-sdk-core");
 const { queryAgent } = require("../utils/vane-agent");
 

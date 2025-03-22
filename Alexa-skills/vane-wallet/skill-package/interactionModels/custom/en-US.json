@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "vane wallet",
+      "invocationName": "vein wallet",
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
@@ -128,6 +128,21 @@
             "the answer is {answer}",
             "I think it's {answer}",
             "it's {answer}"
+          ]
+        },
+        {
+          "name": "VaneagentIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "lookup {query}",
+            "look up {query}",
+            "find information about {query}",
+            "get details on {query}"
           ]
         }
       ],

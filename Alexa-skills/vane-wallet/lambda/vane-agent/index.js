@@ -1,35 +1,19 @@
 // Placeholder index file for vane-agent
-// This file is always  replaced during agent deployment
+// This file will be replaced during agent deployment
 
-class PlaceholderAgent {
-  constructor() {
-    this.name = "PlaceholderAgent";
-  }
+const AgentKit = require("./core/agent-kit.js");
+require("./tools/PlaceholderTool.js");
+require("./agents/PlaceholderAgent.js");
 
-  async generate(options) {
-    console.log("Placeholder agent received request:", options);
-    return {
-      type: "assistant",
-      value:
-        "This is a placeholder agent. Please deploy a real agent using the Vane CLI.",
-    };
-  }
-}
+// Compile the AgentKit configuration
+const compiledKit = AgentKit.compile();
 
-class PlaceholderTool {
-  constructor() {
-    this.name = "PlaceholderTool";
-  }
-}
-
-const placeholderAgent = new PlaceholderAgent();
-
-export const placeholderSolverAgent = placeholderAgent;
-
+// Create an agents object with all the agents
 const output = {
-  placeholderSolverAgent,
-  getAllAgents: () => ({ PlaceholderAgent: placeholderAgent }),
-  getAllTools: () => ({ PlaceholderTool: new PlaceholderTool() }),
+  placeholderSolverAgent: compiledKit.agents["PlaceholderAgent"],
+  getAllAgents: () => compiledKit.agents,
+  getAllTools: () => compiledKit.tools,
 };
 
-export default output;
+// Export the agents object as default
+module.exports = output;
