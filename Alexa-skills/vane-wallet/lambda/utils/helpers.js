@@ -16,7 +16,7 @@ const PRIVY_API_URL = "https://api.privy.io/v1";
 const TRIVIA_QUESTIONS = [
   {
     question: "What was the name of your first pet?",
-    answer: "fluffy", // Answer should be lowercase for case-insensitive comparison
+    answer: "fluffy",
   },
   {
     question: "What street did you grow up on?",
@@ -30,7 +30,7 @@ const TRIVIA_QUESTIONS = [
 
 async function getSecrets(secretName) {
   console.log(
-    `Loading secrets for ${secretName} from local environment variables`
+    `Loading privy secrets for ${secretName} from local environment variables`
   );
   const secretMappings = {
     PrivyWalletCredentials: {
@@ -69,7 +69,12 @@ async function getUserWalletId(userId) {
   }
 }
 
-async function makePrivyRequest(endpoint, method, data = null, userId = null) {
+async function makePrivyRequest(
+  endpoint,
+  method,
+  data = null,
+  walletId = null
+) {
   try {
     // Get secrets for Privy authentication
     const secrets = await getSecrets("PrivyWalletCredentials");
@@ -83,8 +88,7 @@ async function makePrivyRequest(endpoint, method, data = null, userId = null) {
 
     let finalEndpoint = endpoint;
 
-    if (userId && endpoint.includes("<wallet_id>")) {
-      const walletId = await getUserWalletId(userId);
+    if (walletId && endpoint.includes("<wallet_id>")) {
       finalEndpoint = endpoint.replace("<wallet_id>", walletId);
     }
 
@@ -106,6 +110,137 @@ async function makePrivyRequest(endpoint, method, data = null, userId = null) {
       "Privy API error:",
       error.response ? error.response.data : error.message
     );
+    throw error;
+  }
+}
+
+/**
+ * Creates a default wallet policy that blocks value transfers
+ * @param {string} userId - The user ID to include in the policy name
+ * @returns {Promise<string>} - The ID of the created policy
+ */
+async function createDefaultWalletPolicy(userId) {
+  try {
+    const policyResponse = await makePrivyRequest("/policies", "POST", {
+      version: "1.0",
+      name: `Vane Wallet Policy - ${userId}`,
+      chain_type: "ethereum",
+      method_rules: [
+        {
+          method: "eth_sendTransaction",
+          rules: [
+            {
+              name: "Allow zero-value transactions",
+              conditions: [
+                {
+                  field_source: "ethereum_transaction",
+                  field: "value",
+                  operator: "eq",
+                  value: "0",
+                },
+              ],
+              action: "ALLOW",
+            },
+            {
+              name: "Block ERC20 transfers",
+              conditions: [
+                {
+                  field_source: "ethereum_calldata",
+                  field: "transfer.amount",
+                  operator: "eq",
+                  value: "0",
+                  abi: [
+                    {
+                      inputs: [
+                        {
+                          internalType: "address",
+                          name: "to",
+                          type: "address",
+                        },
+                        {
+                          internalType: "uint256",
+                          name: "amount",
+                          type: "uint256",
+                        },
+                      ],
+                      name: "transfer",
+                      outputs: [
+                        {
+                          internalType: "bool",
+                          name: "",
+                          type: "bool",
+                        },
+                      ],
+                      stateMutability: "nonpayable",
+                      type: "function",
+                    },
+                  ],
+                },
+              ],
+              action: "ALLOW",
+            },
+          ],
+        },
+      ],
+      default_action: "DENY",
+    });
+
+    return policyResponse.id;
+  } catch (error) {
+    console.error("Error creating default wallet policy:", error);
+    throw error;
+  }
+}
+
+/**
+ * Updates a policy to allow transfers to a specific address
+ * @param {string} policyId - The policy ID to update
+ * @param {string} contactName - The name of the contact
+ * @param {string} contactAddress - The Ethereum address to allow transfers to
+ * @returns {Promise<boolean>} - True if successful
+ */
+async function allowAddressInPolicy(policyId, contactName, contactAddress) {
+  try {
+    // First get the current policy
+    const currentPolicy = await makePrivyRequest(
+      `/policies/${policyId}`,
+      "GET"
+    );
+
+    // Extract the existing method rules
+    const methodRules = currentPolicy.method_rules || [];
+
+    // Find the eth_sendTransaction method rule
+    const sendTxRule = methodRules.find(
+      (rule) => rule.method === "eth_sendTransaction"
+    );
+
+    if (!sendTxRule) {
+      throw new Error("eth_sendTransaction rule not found in policy");
+    }
+
+    // Add a new rule to allow transactions to this contact's address
+    sendTxRule.rules.unshift({
+      name: `Allow transfers to ${contactName}`,
+      conditions: [
+        {
+          field_source: "ethereum_transaction",
+          field: "to",
+          operator: "eq",
+          value: contactAddress,
+        },
+      ],
+      action: "ALLOW",
+    });
+
+    // Update the policy
+    await makePrivyRequest(`/policies/${policyId}`, "PATCH", {
+      method_rules: methodRules,
+    });
+
+    return true;
+  } catch (error) {
+    console.error(`Error allowing address ${contactAddress} in policy:`, error);
     throw error;
   }
 }
@@ -232,5 +367,9 @@ module.exports = {
   verifyContactExists,
   getSlotValue,
   getWalletPolicyId,
+  updatePrivyPolicy,
+  createDefaultWalletPolicy,
+  allowAddressInPolicy,
   TRIVIA_QUESTIONS,
+  dynamoDB,
 };
