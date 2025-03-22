@@ -21,7 +21,12 @@
               "uri": "arn:aws:lambda:us-west-2:203918872321:function:b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c:Release_0"
             }
           }
-        }
+        },
+        "interfaces": [
+          {
+            "type": "RENDER_TEMPLATE"
+          }
+        ]
       }
     },
     "publishingInformation": {
@@ -30,6 +35,23 @@
           "name": "vane wallet"
         }
       }
-    }
+    },
+    "permissions": [
+      {
+        "name": "alexa::app_links"
+      },
+      {
+        "name": "alexa::profile:name:read"
+      },
+      {
+        "name": "alexa::profile:email:read"
+      },
+      {
+        "name": "alexa::profile:mobile_number:read"
+      },
+      {
+        "name": "alexa::profile:given_name:read"
+      }
+    ]
   }
 }
