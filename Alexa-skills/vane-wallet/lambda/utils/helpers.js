@@ -5,9 +5,10 @@ require("dotenv").config();
 const AWS = require("aws-sdk");
 const axios = require("axios");
 
-// AWS services setup
-const SKILL_ID = "amzn1.ask.skill.b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c";
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const dynamoDB = new AWS.DynamoDB.DocumentClient({
+  tableName: process.env.DYNAMODB_PERSISTENCE_TABLE_NAME,
+  region: process.env.DYNAMODB_PERSISTENCE_REGION,
+});
 
 // Base URLs
 const PRIVY_API_URL = "https://api.privy.io/v1";
@@ -48,19 +49,15 @@ async function getSecrets(secretName) {
   }
 }
 
-async function getUserWalletId(userId) {
+async function getUserWalletId(handlerInput) {
   try {
-    const params = {
-      TableName: `AlexaWalletUsers-${SKILL_ID}`,
-      Key: { userId: userId },
-    };
+    const attributesManager = handlerInput.attributesManager;
+    const attributes =
+      (await attributesManager.getPersistentAttributes()) || {};
 
-    const result = await dynamoDB.get(params).promise();
-
-    if (result.Item && result.Item.walletId) {
-      return result.Item.walletId;
+    if (attributes.walletId) {
+      return attributes.walletId;
     } else {
-      console.error(`No wallet ID found for user: ${userId}`);
       throw new Error("User wallet not found");
     }
   } catch (error) {
@@ -123,7 +120,7 @@ async function createDefaultWalletPolicy(userId) {
   try {
     const policyResponse = await makePrivyRequest("/policies", "POST", {
       version: "1.0",
-      name: `Vane Wallet Policy - ${userId}`,
+      name: `Vane Wallet Policy`,
       chain_type: "ethereum",
       method_rules: [
         {
@@ -192,13 +189,6 @@ async function createDefaultWalletPolicy(userId) {
   }
 }
 
-/**
- * Updates a policy to allow transfers to a specific address
- * @param {string} policyId - The policy ID to update
- * @param {string} contactName - The name of the contact
- * @param {string} contactAddress - The Ethereum address to allow transfers to
- * @returns {Promise<boolean>} - True if successful
- */
 async function allowAddressInPolicy(policyId, contactName, contactAddress) {
   try {
     // First get the current policy
@@ -245,9 +235,9 @@ async function allowAddressInPolicy(policyId, contactName, contactAddress) {
   }
 }
 
-async function getWalletPolicyId(userId) {
+async function getWalletPolicyId(handlerInput) {
   try {
-    const walletId = await getUserWalletId(userId);
+    const walletId = await getUserWalletId(handlerInput);
     const walletData = await makePrivyRequest(`/wallets/${walletId}`, "GET");
 
     // Check if there's at least one policy ID
@@ -295,15 +285,13 @@ async function verifyUserTrivia(userId, answer, currentQuestion) {
   }
 }
 
-async function getAddressBook(userId) {
+async function getAddressBook(handlerInput) {
   try {
-    const params = {
-      TableName: `AlexaWalletAddressBook-${SKILL_ID}`,
-      Key: { userId: userId },
-    };
+    const attributesManager = handlerInput.attributesManager;
+    const attributes =
+      (await attributesManager.getPersistentAttributes()) || {};
 
-    const result = await dynamoDB.get(params).promise();
-    return result.Item ? result.Item.addresses : {};
+    return attributes.addressBook || {};
   } catch (error) {
     console.error("Error retrieving address book:", error);
     return {};
@@ -367,7 +355,6 @@ module.exports = {
   verifyContactExists,
   getSlotValue,
   getWalletPolicyId,
-  updatePrivyPolicy,
   createDefaultWalletPolicy,
   allowAddressInPolicy,
   TRIVIA_QUESTIONS,

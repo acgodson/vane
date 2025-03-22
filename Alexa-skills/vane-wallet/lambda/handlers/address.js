@@ -1,15 +1,13 @@
-import {
-  dynamoDB,
+const {
   getAddressBook,
   getUserWalletId,
   createDefaultWalletPolicy,
-} from "../utils/helpers";
+} = require("../utils/helpers");
 
 // handlers/address.js
 const Alexa = require("ask-sdk-core");
 const { getSlotValue, makePrivyRequest } = require("../utils/helpers");
 
-const SKILL_ID = "amzn1.ask.skill.b881427a-cf3d-4ea4-8ddc-c4f5f2d61d9c";
 // Contact permission constants
 const PERMISSIONS = [
   "alexa::profile:name:read",
@@ -20,7 +18,7 @@ const PERMISSIONS = [
 
 // Function to generate appropriate card URL
 function generateCardUrl(action, userId, params = {}) {
-  const baseUrl = "https://vanewallet.com";
+  const baseUrl = "https://vanewallet.vercel.app";
 
   switch (action) {
     case "create":
@@ -65,9 +63,12 @@ const CreateWalletIntentHandler = {
     try {
       const userId = handlerInput.requestEnvelope.session.user.userId;
 
+      console.log("Table name:", process.env.DYNAMODB_PERSISTENCE_TABLE_NAME);
+      console.log("Region:", process.env.DYNAMODB_PERSISTENCE_REGION);
+
       // Check if user already has a wallet
       try {
-        const existingWalletId = await getUserWalletId(userId);
+        const existingWalletId = await getUserWalletId(handlerInput);
         if (existingWalletId) {
           // User already has a wallet
           const walletData = await makePrivyRequest(
@@ -105,26 +106,27 @@ const CreateWalletIntentHandler = {
 
       // 2. Create a wallet with the policy attached
       const createWalletData = await makePrivyRequest("/wallets", "POST", {
-        chain: "ethereum", // Using Sepolia testnet
+        chain_type: "ethereum",
         policy_ids: [policyId],
       });
 
       const walletId = createWalletData.id;
       const ethAddress = createWalletData.address;
 
-      // 3. Store wallet ID in DynamoDB
-      const params = {
-        TableName: `AlexaWalletUsers-${SKILL_ID}`,
-        Item: {
-          userId: userId,
-          walletId: walletId,
-          policyId: policyId,
-          address: ethAddress,
-          createdAt: new Date().toISOString(),
-        },
-      };
+      const attributesManager = handlerInput.attributesManager;
+      const attributes =
+        (await attributesManager.getPersistentAttributes()) || {};
 
-      await dynamoDB.put(params).promise();
+      // Add wallet info
+      attributes.walletId = walletId;
+      attributes.policyId = policyId;
+      attributes.address = ethAddress;
+      attributes.createdAt = new Date().toISOString();
+      attributes.addressBook = {};
+
+      // Save back to DynamoDB
+      attributesManager.setPersistentAttributes(attributes);
+      await attributesManager.savePersistentAttributes();
 
       // Generate QR code for the new wallet address
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
@@ -164,20 +166,16 @@ const ShowWalletAddressIntentHandler = {
   },
   async handle(handlerInput) {
     try {
-      const userId = handlerInput.requestEnvelope.session.user.userId;
+      // Get attributes using attributesManager
+      const attributesManager = handlerInput.attributesManager;
+      const attributes =
+        (await attributesManager.getPersistentAttributes()) || {};
 
-      // Get wallet ID using helper function
-      const walletId = await getUserWalletId(userId);
-
-      // Fetch wallet data from Privy API
-      const walletData = await makePrivyRequest(`/wallets/${walletId}`, "GET");
-
-      // Extract the Ethereum address from wallet data
-      const ethAddress = walletData.address;
-
-      if (!ethAddress) {
-        throw new Error("No wallet address found");
+      if (!attributes.address) {
+        throw new Error("User wallet not found");
       }
+
+      const ethAddress = attributes.address;
 
       // Generate QR code for the wallet address
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
@@ -215,7 +213,6 @@ const ShowWalletAddressIntentHandler = {
     }
   },
 };
-
 // Add Address Intent Handler
 const AddAddressIntentHandler = {
   canHandle(handlerInput) {
@@ -295,7 +292,6 @@ const ShowContactAddressIntentHandler = {
   },
   async handle(handlerInput) {
     try {
-      const userId = handlerInput.requestEnvelope.session.user.userId;
       const contactName = getSlotValue(handlerInput, "contactName");
 
       if (!contactName) {
@@ -308,7 +304,7 @@ const ShowContactAddressIntentHandler = {
       }
 
       // Get the address book using helper function
-      const addressBook = await getAddressBook(userId);
+      const addressBook = await getAddressBook(handlerInput);
 
       // Find the contact in the address book (case insensitive search)
       const contactKey = Object.keys(addressBook).find(
