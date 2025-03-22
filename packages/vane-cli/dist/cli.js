@@ -38416,15 +38416,15 @@ async function deployToAlexaSkill(projectPath, inputOptions = {}) {
       );
     }
     const lambdaPath = (0, import_path6.join)(alexaSkillPath, "lambda");
-    const customPath = (0, import_path6.join)(lambdaPath, "custom");
-    const utilsPath = (0, import_path6.join)(customPath, "utils");
+    const utilsPath = (0, import_path6.join)(lambdaPath, "utils");
+    const handlersPath = (0, import_path6.join)(lambdaPath, "handlers");
     if (!(0, import_fs4.existsSync)(lambdaPath))
       (0, import_fs4.mkdirSync)(lambdaPath, { recursive: true });
-    if (!(0, import_fs4.existsSync)(customPath))
-      (0, import_fs4.mkdirSync)(customPath, { recursive: true });
     if (!(0, import_fs4.existsSync)(utilsPath))
       (0, import_fs4.mkdirSync)(utilsPath, { recursive: true });
-    const targetAgentPath = (0, import_path6.join)(customPath, options.agentName);
+    if (!(0, import_fs4.existsSync)(handlersPath))
+      (0, import_fs4.mkdirSync)(handlersPath, { recursive: true });
+    const targetAgentPath = (0, import_path6.join)(lambdaPath, options.agentName);
     await withSpinner(`Copying agent to ${targetAgentPath}...`, async () => {
       if ((0, import_fs4.existsSync)(targetAgentPath)) {
         removeDirSync(targetAgentPath);
@@ -38443,9 +38443,6 @@ async function deployToAlexaSkill(projectPath, inputOptions = {}) {
         return true;
       }
     );
-    const handlersPath = (0, import_path6.join)(customPath, "handlers");
-    if (!(0, import_fs4.existsSync)(handlersPath))
-      (0, import_fs4.mkdirSync)(handlersPath, { recursive: true });
     const handlerPath = (0, import_path6.join)(handlersPath, `${options.agentName}Handler.js`);
     await withSpinner(
       `Creating example handler at ${handlerPath}...`,
@@ -38559,85 +38556,137 @@ async function collectDeployOptions(projectPath, inputOptions) {
 }
 function generateWrapperFunction(agentName) {
   return `// Auto-generated wrapper for ${agentName}
-const path = require('path');
-
-/**
- * Simple wrapper for the Vane AI agent
- * @param {string} prompt - The user's query or prompt
- * @param {Object} [options] - Optional configuration
- * @returns {Promise<string>} - The agent's response
- */
-async function queryAgent(prompt, options = {}) {
-  try {
-    // Dynamically import the agent (only once)
-    if (!queryAgent.agent) {
-      const agentPath = path.join(__dirname, '..', '${agentName}');
-      console.log('Loading agent from:', agentPath);
-      
-      try {
-        // Using require instead of import for compatibility
-        const agentModule = require(agentPath);
+  const path = require('path');
+  const fs = require('fs');
+  
+  /**
+   * Simple wrapper for the Vane AI agent
+   * @param {string} prompt - The user's query or prompt
+   * @param {Object} [options] - Optional configuration
+   * @returns {Promise<string>} - The agent's response
+   */
+  async function queryAgent(prompt, options = {}) {
+    try {
+      // Dynamically import the agent (only once)
+      if (!queryAgent.agent) {
+        const agentPath = path.join(__dirname, '..', '${agentName}');
+        console.log('Loading agent from:', agentPath);
         
-        // The agent might be the default export or named export
-        queryAgent.agent = agentModule.default || agentModule.agent || agentModule;
-        
-        if (!queryAgent.agent || typeof queryAgent.agent !== 'function') {
-          console.error('Agent not found or not a function in module:', Object.keys(agentModule));
+        try {
+          // First try to import the index.js file
+          const indexPath = path.join(agentPath, 'index.js');
+          console.log('Trying to load from index path:', indexPath);
           
-          // Try to find any function export that could be the agent
-          for (const key in agentModule) {
-            if (typeof agentModule[key] === 'function') {
-              console.log('Found potential agent function:', key);
+          // Using require instead of import for compatibility
+          const agentModule = require(indexPath);
+          
+          console.log('Available exports:', Object.keys(agentModule));
+          
+          // Look for named exports ending with "Agent" (like mathSolverAgent)
+          for (const key of Object.keys(agentModule)) {
+            if (key !== 'default' && key.toLowerCase().includes('agent')) {
+              console.log(\`Found specific agent: \${key}\`);
               queryAgent.agent = agentModule[key];
               break;
             }
           }
           
-          // If still not found, use the whole module as a fallback
-          if (!queryAgent.agent || typeof queryAgent.agent !== 'function') {
-            console.warn('Could not identify agent function, using module as agent');
-            queryAgent.agent = agentModule;
+          // If no specific agent found yet, look in default export
+          if (!queryAgent.agent && agentModule.default) {
+            // Look for properties in the default export that end with "Agent"
+            for (const key of Object.keys(agentModule.default)) {
+              if (key.toLowerCase().includes('agent') && 
+                  key !== 'getAllAgents' && // Skip helper functions
+                  key !== 'getAllTools') {
+                console.log(\`Found agent in default export: \${key}\`);
+                queryAgent.agent = agentModule.default[key];
+                break;
+              }
+            }
+          }
+          
+          // Final fallback - try getting all agents and using the first one
+          if (!queryAgent.agent && 
+              agentModule.default && 
+              typeof agentModule.default.getAllAgents === 'function') {
+            const allAgents = agentModule.default.getAllAgents();
+            const agentNames = Object.keys(allAgents);
+            if (agentNames.length > 0) {
+              console.log(\`Using first agent from getAllAgents: \${agentNames[0]}\`);
+              queryAgent.agent = allAgents[agentNames[0]];
+            }
+          }
+          
+          if (!queryAgent.agent) {
+            throw new Error("Could not find a suitable agent in the module exports");
+          }
+          
+          console.log("Found agent:", queryAgent.agent.name || "Unknown");
+          
+          // Initialize agent if needed
+          if (typeof queryAgent.agent.initialize === 'function') {
+            console.log('Initializing agent...');
+            await queryAgent.agent.initialize();
+          }
+        } catch (error) {
+          console.error('Error importing agent:', error);
+          throw error;
+        }
+      }
+      
+      // Send query to agent
+      console.log('Sending query to agent:', prompt);
+      let response;
+      
+      // Use generate() method if available
+      if (typeof queryAgent.agent.generate === 'function') {
+        console.log('Using agent.generate() method');
+        response = await queryAgent.agent.generate({
+          messages: [{ role: 'user', content: prompt }],
+          ...options
+        });
+        
+        console.log('Raw response:', JSON.stringify(response).substring(0, 100) + '...');
+        
+        // Handle different response formats
+        if (response && typeof response === 'object') {
+          if (response.type === 'assistant' && response.value) {
+            response = response.value;
+          } else if (response.value) {
+            response = response.value;
+          } else if (response.content) {
+            response = response.content;
+          } else if (response.text) {
+            response = response.text;
           }
         }
-        
-        // Initialize agent if needed
-        if (typeof queryAgent.agent.initialize === 'function') {
-          console.log('Initializing agent...');
-          await queryAgent.agent.initialize();
-        }
-      } catch (error) {
-        console.error('Error importing agent:', error);
-        throw error;
+      } else {
+        throw new Error('Agent does not have a generate() method');
       }
+      
+      console.log('Processed response:', response);
+      
+      // Ensure we return a string
+      if (typeof response !== 'string') {
+        console.log('Response is not a string, converting...');
+        if (response && typeof response === 'object') {
+          return JSON.stringify(response);
+        }
+        return String(response);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error querying agent:', error);
+      return 'I encountered an error while processing your request. ' + error.message;
     }
-    
-    // Send query to agent
-    console.log('Sending query to agent:', prompt);
-    let response;
-    
-    if (typeof queryAgent.agent === 'function') {
-      response = await queryAgent.agent(prompt, options);
-    } else if (queryAgent.agent && typeof queryAgent.agent.query === 'function') {
-      response = await queryAgent.agent.query(prompt, options);
-    } else if (queryAgent.agent && typeof queryAgent.agent.run === 'function') {
-      response = await queryAgent.agent.run(prompt, options);
-    } else {
-      throw new Error('Could not determine how to invoke the agent');
-    }
-    
-    console.log('Received response from agent');
-    return response;
-  } catch (error) {
-    console.error('Error querying agent:', error);
-    return 'I encountered an error while processing your request. ' + error.message;
   }
-}
-
-// Export the wrapper function
-module.exports = {
-  queryAgent
-};
-`;
+  
+  // Export the wrapper function
+  module.exports = {
+    queryAgent
+  };
+  `;
 }
 function generateExampleHandler(agentName) {
   const intentName = agentName.includes("-") ? capitalizeFirstLetter(agentName.replace(/-/g, "")) : capitalizeFirstLetter(agentName);
