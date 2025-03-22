@@ -1,0 +1,217 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "vane wallet",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "CheckNativeBalanceIntent",
+          "slots": [],
+          "samples": [
+            "check my balance",
+            "what's my balance",
+            "how much eth do I have",
+            "check my wallet balance",
+            "check ethereum balance",
+            "check eth balance",
+            "check wallet"
+          ]
+        },
+
+        {
+          "name": "SendTransactionIntent",
+          "slots": [
+            {
+              "name": "amount",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "recipient",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "send {amount} eth to {recipient}",
+            "transfer {amount} ethereum to {recipient}",
+            "send {amount} to {recipient}",
+            "create a transaction of {amount} eth to {recipient}",
+            "pay {recipient} {amount} eth"
+          ]
+        },
+
+        {
+          "name": "AddAddressIntent",
+          "slots": [
+            {
+              "name": "address",
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "nickname",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "add address {address} as {nickname}",
+            "save {nickname} with address {address}",
+            "add {nickname} to address book",
+            "associate {address} with contact {nickname}",
+            "link {address} to my contact {nickname}",
+            "connect {nickname} to address {address}",
+            "add contact {nickname}",
+            "import contact {nickname}",
+            "add new address",
+            "import address"
+          ]
+        },
+        {
+          "name": "AnswerIntent",
+          "slots": [
+            {
+              "name": "answer",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "{answer}",
+            "the answer is {answer}",
+            "I think it's {answer}",
+            "it's {answer}"
+          ]
+        },
+
+        {
+          "name": "ScanAddressIntent",
+          "slots": [],
+          "samples": [
+            "scan an address",
+            "scan wallet address",
+            "scan a new address",
+            "start address scan",
+            "scan QR code"
+          ]
+        },
+        {
+          "name": "CheckScanStatusIntent",
+          "slots": [],
+          "samples": [
+            "check scan status",
+            "is my scan ready",
+            "has the address been scanned",
+            "check my scan",
+            "get scan results"
+          ]
+        },
+        {
+          "name": "ImportFromShortCodeIntent",
+          "slots": [
+            {
+              "name": "shortCode",
+              "type": "AMAZON.AlphaNumeric"
+            }
+          ],
+          "samples": [
+            "import short code {shortCode}",
+            "use short code {shortCode}",
+            "look up code {shortCode}",
+            "find address for code {shortCode}",
+            "get address from code {shortCode}"
+          ]
+        },
+        {
+          "name": "AssociateAddressWithContactIntent",
+          "slots": [
+            {
+              "name": "contactName",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "associate with {contactName}",
+            "link to {contactName}",
+            "use contact {contactName}",
+            "add to {contactName}",
+            "save for {contactName}"
+          ]
+        }
+      ],
+      "types": []
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "ImportFromShortCodeIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "shortCode",
+              "type": "AMAZON.AlphaNumeric",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.ImportFromShortCodeIntent.shortCode"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AssociateAddressWithContactIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "contactName",
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.AssociateAddressWithContactIntent.contactName"
+              }
+            }
+          ]
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
+    "prompts": [
+      {
+        "id": "Elicit.Slot.ImportFromShortCodeIntent.shortCode",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What short code would you like to lookup?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Please tell me the short code for the address."
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.AssociateAddressWithContactIntent.contactName",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Which contact would you like to associate with this address?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Please tell me the name of the contact for this address."
+          }
+        ]
+      }
+    ]
+  }
+}
