@@ -155,24 +155,22 @@ export async function deployToAlexaSkill(projectPath, inputOptions = {}) {
       ? capitalizeFirstLetter(options.agentName.replace(/-/g, ""))
       : capitalizeFirstLetter(options.agentName);
 
-    const interactionModelSnippet = `
-{
-  "name": "${intentName}Intent",
-  "slots": [
-    {
-      "name": "query",
-      "type": "AMAZON.SearchQuery"
-    }
-  ],
-  "samples": [
-    "ask about {query}",
-    "tell me about {query}",
-    "what is {query}",
-    "check {query}",
-    "get information about {query}",
-    "lookup {query}"
-  ]
-}`;
+      const interactionModelSnippet = `
+      {
+        "name": "${intentName}Intent",
+        "slots": [
+          {
+            "name": "query",
+            "type": "AMAZON.SearchQuery"
+          }
+        ],
+        "samples": [
+          "lookup {query}",
+          "look up {query}",
+          "find information about {query}",
+          "get details on {query}"
+        ]
+      }`;
 
     // 5. Generate index.js import snippet
     const handlerName = intentName + "IntentHandler";
@@ -412,9 +410,6 @@ function generateWrapperFunction(agentName) {
   `;
 }
 
-/**
- * Generate example handler for the Alexa skill
- */
 function generateExampleHandler(agentName) {
   const intentName = agentName.includes("-")
     ? capitalizeFirstLetter(agentName.replace(/-/g, ""))
@@ -423,51 +418,60 @@ function generateExampleHandler(agentName) {
   const handlerName = intentName + "IntentHandler";
 
   return `// Auto-generated handler for ${agentName}
-const Alexa = require('ask-sdk-core');
-const { queryAgent } = require('../utils/${agentName}');
-
-/**
- * Handler for ${intentName} queries
- */
-const ${handlerName} = {
-  canHandle(handlerInput) {
-    return (
-      Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
-      Alexa.getIntentName(handlerInput.requestEnvelope) === '${intentName}Intent'
-    );
-  },
-  async handle(handlerInput) {
-    // Get the user's query from the slot
-    const query = Alexa.getSlotValue(handlerInput.requestEnvelope, 'query') || 
-                  'What is the current price of Ethereum?';
-    
-    try {
-      console.log('${handlerName} received query:', query);
+  const Alexa = require('ask-sdk-core');
+  const { queryAgent } = require('../utils/${agentName}');
+  
+  /**
+   * Handler for ${intentName} queries
+   */
+  const ${handlerName} = {
+    canHandle(handlerInput) {
+      return (
+        Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+        Alexa.getIntentName(handlerInput.requestEnvelope) === '${intentName}Intent'
+      );
+    },
+    async handle(handlerInput) {
+      // Get the user's query from the slot
+      const query = Alexa.getSlotValue(handlerInput.requestEnvelope, 'query') || 
+                    'What is the current price of Ethereum?';
       
-      // Query the agent
-      const response = await queryAgent(query, {
-        // You can add options here as needed
-        userId: handlerInput.requestEnvelope.session.user.userId
-      });
-      
-      console.log('Agent response:', response);
-      
-      return handlerInput.responseBuilder
-        .speak(response)
-        .reprompt('Is there anything else you would like to know?')
-        .getResponse();
-    } catch (error) {
-      console.error('Error in ${handlerName}:', error);
-      
-      return handlerInput.responseBuilder
-        .speak('I had trouble accessing that information right now. Please try again later.')
-        .getResponse();
+      try {
+        console.log('${handlerName} received query:', query);
+        
+        // Query the agent
+        const response = await queryAgent(query, {
+          // You can add options here as needed
+          userId: handlerInput.requestEnvelope.session.user.userId
+        });
+        
+        console.log('Agent response:', response);
+        
+        // Format response for better Alexa speech
+        let formattedResponse = response;
+        
+        // Convert LaTeX-style math notation to plain text for better speech
+        formattedResponse = formattedResponse.replace(/\\\\?\\(([^)]+)\\\\?\\)/g, '$1');
+        formattedResponse = formattedResponse.replace(/\\\\times/g, 'times');
+        formattedResponse = formattedResponse.replace(/\\\\div/g, 'divided by');
+        formattedResponse = formattedResponse.replace(/\\\\sqrt/g, 'square root of');
+        
+        return handlerInput.responseBuilder
+          .speak(formattedResponse)
+          .reprompt('Is there anything else you would like to lookup?')
+          .getResponse();
+      } catch (error) {
+        console.error('Error in ${handlerName}:', error);
+        
+        return handlerInput.responseBuilder
+          .speak('I had trouble looking up that information right now. Please try again later.')
+          .getResponse();
+      }
     }
-  }
-};
-
-module.exports = ${handlerName};
-`;
+  };
+  
+  module.exports = ${handlerName};
+  `;
 }
 
 /**
