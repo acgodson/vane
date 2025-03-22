@@ -23,13 +23,8 @@ const {
   PermissionsRequiredHandler,
 } = require("./handlers/address");
 
-// Contact permission constants
-const PERMISSIONS = [
-  "alexa::profile:name:read",
-  "alexa::profile:email:read",
-  "alexa::profile:mobile_number:read",
-  "alexa::profile:given_name:read",
-];
+// Import the Vane AI agent handler
+const VaneagentIntentHandler = require("./handlers/vane-agentHandler");
 
 // Skill Builder with all handlers
 exports.handler = Alexa.SkillBuilders.custom()
@@ -41,6 +36,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     ShowWalletAddressIntentHandler,
     AddAddressIntentHandler,
     ShowContactAddressIntentHandler,
+    VaneagentIntentHandler,
     AnswerIntentHandler,
     PermissionsRequiredHandler,
     HelpIntentHandler,
