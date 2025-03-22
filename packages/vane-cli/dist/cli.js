@@ -330,8 +330,8 @@ var require_req = __commonJS({
       if (req.originalUrl) {
         _req.url = req.originalUrl;
       } else {
-        const path4 = req.path;
-        _req.url = typeof path4 === "string" ? path4 : req.url ? req.url.path || req.url : void 0;
+        const path5 = req.path;
+        _req.url = typeof path5 === "string" ? path5 : req.url ? req.url.path || req.url : void 0;
       }
       if (req.query) {
         _req.query = req.query;
@@ -526,19 +526,19 @@ var require_parse = __commonJS({
       const wildcards = [];
       var wcLen = 0;
       const secret = paths.reduce(function(o, strPath, ix) {
-        var path4 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
+        var path5 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
         const leadingBracket = strPath[0] === "[";
-        path4 = path4.map((p) => {
+        path5 = path5.map((p) => {
           if (p[0] === "[")
             return p.substr(1, p.length - 2);
           else
             return p;
         });
-        const star = path4.indexOf("*");
+        const star = path5.indexOf("*");
         if (star > -1) {
-          const before = path4.slice(0, star);
+          const before = path5.slice(0, star);
           const beforeStr = before.join(".");
-          const after = path4.slice(star + 1, path4.length);
+          const after = path5.slice(star + 1, path5.length);
           const nested = after.length > 0;
           wcLen++;
           wildcards.push({
@@ -549,7 +549,7 @@ var require_parse = __commonJS({
           });
         } else {
           o[strPath] = {
-            path: path4,
+            path: path5,
             val: void 0,
             precensored: false,
             circle: "",
@@ -595,13 +595,13 @@ var require_redactor = __commonJS({
       return redact;
     }
     function redactTmpl(secret, isCensorFct, censorFctTakesPath) {
-      return Object.keys(secret).map((path4) => {
-        const { escPath, leadingBracket, path: arrPath } = secret[path4];
+      return Object.keys(secret).map((path5) => {
+        const { escPath, leadingBracket, path: arrPath } = secret[path5];
         const skip = leadingBracket ? 1 : 0;
         const delim = leadingBracket ? "" : ".";
         const hops = [];
         var match;
-        while ((match = rx.exec(path4)) !== null) {
+        while ((match = rx.exec(path5)) !== null) {
           const [, ix] = match;
           const { index, input } = match;
           if (index > skip)
@@ -609,9 +609,9 @@ var require_redactor = __commonJS({
         }
         var existence = hops.map((p) => `o${delim}${p}`).join(" && ");
         if (existence.length === 0)
-          existence += `o${delim}${path4} != null`;
+          existence += `o${delim}${path5} != null`;
         else
-          existence += ` && o${delim}${path4} != null`;
+          existence += ` && o${delim}${path5} != null`;
         const circularDetection = `
       switch (true) {
         ${hops.reverse().map((p) => `
@@ -624,12 +624,12 @@ var require_redactor = __commonJS({
         const censorArgs = censorFctTakesPath ? `val, ${JSON.stringify(arrPath)}` : `val`;
         return `
       if (${existence}) {
-        const val = o${delim}${path4}
+        const val = o${delim}${path5}
         if (val === censor) {
           secret[${escPath}].precensored = true
         } else {
           secret[${escPath}].val = val
-          o${delim}${path4} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
+          o${delim}${path5} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
           ${circularDetection}
         }
       }
@@ -682,14 +682,14 @@ var require_modifiers = __commonJS({
         target[k] = values[i];
       }
     }
-    function groupRedact(o, path4, censor, isCensorFct, censorFctTakesPath) {
-      const target = get(o, path4);
+    function groupRedact(o, path5, censor, isCensorFct, censorFctTakesPath) {
+      const target = get(o, path5);
       if (target == null || typeof target === "string")
         return { keys: null, values: null, target, flat: true };
       const keys = Object.keys(target);
       const keysLength = keys.length;
-      const pathLength = path4.length;
-      const pathWithKey = censorFctTakesPath ? [...path4] : void 0;
+      const pathLength = path5.length;
+      const pathWithKey = censorFctTakesPath ? [...path5] : void 0;
       const values = new Array(keysLength);
       for (var i = 0; i < keysLength; i++) {
         const key = keys[i];
@@ -707,30 +707,30 @@ var require_modifiers = __commonJS({
     }
     function nestedRestore(instructions) {
       for (let i = 0; i < instructions.length; i++) {
-        const { target, path: path4, value } = instructions[i];
+        const { target, path: path5, value } = instructions[i];
         let current = target;
-        for (let i2 = path4.length - 1; i2 > 0; i2--) {
-          current = current[path4[i2]];
+        for (let i2 = path5.length - 1; i2 > 0; i2--) {
+          current = current[path5[i2]];
         }
-        current[path4[0]] = value;
+        current[path5[0]] = value;
       }
     }
-    function nestedRedact(store, o, path4, ns, censor, isCensorFct, censorFctTakesPath) {
-      const target = get(o, path4);
+    function nestedRedact(store, o, path5, ns, censor, isCensorFct, censorFctTakesPath) {
+      const target = get(o, path5);
       if (target == null)
         return;
       const keys = Object.keys(target);
       const keysLength = keys.length;
       for (var i = 0; i < keysLength; i++) {
         const key = keys[i];
-        specialSet(store, target, key, path4, ns, censor, isCensorFct, censorFctTakesPath);
+        specialSet(store, target, key, path5, ns, censor, isCensorFct, censorFctTakesPath);
       }
       return store;
     }
     function has(obj, prop) {
       return obj !== void 0 && obj !== null ? "hasOwn" in Object ? Object.hasOwn(obj, prop) : Object.prototype.hasOwnProperty.call(obj, prop) : false;
     }
-    function specialSet(store, o, k, path4, afterPath, censor, isCensorFct, censorFctTakesPath) {
+    function specialSet(store, o, k, path5, afterPath, censor, isCensorFct, censorFctTakesPath) {
       const afterPathLen = afterPath.length;
       const lastPathIndex = afterPathLen - 1;
       const originalKey = k;
@@ -774,7 +774,7 @@ var require_modifiers = __commonJS({
             if (consecutive) {
               redactPathCurrent = node(redactPathCurrent, wck, depth);
               level = i;
-              ov = iterateNthLevel(wcov, level - 1, k, path4, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i, lastPathIndex, redactPathCurrent, store, o[originalKey], depth + 1);
+              ov = iterateNthLevel(wcov, level - 1, k, path5, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i, lastPathIndex, redactPathCurrent, store, o[originalKey], depth + 1);
             } else {
               if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
                 if (kIsWc) {
@@ -782,7 +782,7 @@ var require_modifiers = __commonJS({
                 } else {
                   ov = wcov[k];
                 }
-                nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path4, originalKey, ...afterPath]) : censor(ov) : censor;
+                nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path5, originalKey, ...afterPath]) : censor(ov) : censor;
                 if (kIsWc) {
                   const rv = restoreInstr(node(redactPathCurrent, wck, depth), ov, o[originalKey]);
                   store.push(rv);
@@ -805,7 +805,7 @@ var require_modifiers = __commonJS({
         } else {
           ov = n[k];
           redactPathCurrent = node(redactPathCurrent, k, depth);
-          nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path4, originalKey, ...afterPath]) : censor(ov) : censor;
+          nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path5, originalKey, ...afterPath]) : censor(ov) : censor;
           if (has(n, k) && nv === ov || nv === void 0 && censor !== void 0) {
           } else {
             const rv = restoreInstr(redactPathCurrent, ov, o[originalKey]);
@@ -829,7 +829,7 @@ var require_modifiers = __commonJS({
       }
       return n;
     }
-    function iterateNthLevel(wcov, level, k, path4, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i, lastPathIndex, redactPathCurrent, store, parent, depth) {
+    function iterateNthLevel(wcov, level, k, path5, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i, lastPathIndex, redactPathCurrent, store, parent, depth) {
       if (level === 0) {
         if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
           if (kIsWc) {
@@ -837,7 +837,7 @@ var require_modifiers = __commonJS({
           } else {
             ov = wcov[k];
           }
-          nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path4, originalKey, ...afterPath]) : censor(ov) : censor;
+          nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path5, originalKey, ...afterPath]) : censor(ov) : censor;
           if (kIsWc) {
             const rv = restoreInstr(redactPathCurrent, ov, parent);
             store.push(rv);
@@ -856,7 +856,7 @@ var require_modifiers = __commonJS({
       for (const key in wcov) {
         if (typeof wcov[key] === "object") {
           redactPathCurrent = node(redactPathCurrent, key, depth);
-          iterateNthLevel(wcov[key], level - 1, k, path4, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i, lastPathIndex, redactPathCurrent, store, parent, depth + 1);
+          iterateNthLevel(wcov[key], level - 1, k, path5, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i, lastPathIndex, redactPathCurrent, store, parent, depth + 1);
         }
       }
     }
@@ -878,12 +878,12 @@ var require_modifiers = __commonJS({
     }
     function restoreInstr(node2, value, target) {
       let current = node2;
-      const path4 = [];
+      const path5 = [];
       do {
-        path4.push(current.key);
+        path5.push(current.key);
         current = current.parent;
       } while (current.parent != null);
-      return { path: path4, value, target };
+      return { path: path5, value, target };
     }
   }
 });
@@ -913,10 +913,10 @@ var require_restorer = __commonJS({
       };
     }
     function resetTmpl(secret, paths) {
-      return paths.map((path4) => {
-        const { circle, escPath, leadingBracket } = secret[path4];
+      return paths.map((path5) => {
+        const { circle, escPath, leadingBracket } = secret[path5];
         const delim = leadingBracket ? "" : ".";
-        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path4} = secret[${escPath}].val`;
+        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path5} = secret[${escPath}].val`;
         const clear = `secret[${escPath}].val = undefined`;
         return `
       if (secret[${escPath}].val !== undefined) {
@@ -1151,8 +1151,8 @@ var require_redaction = __commonJS({
         if (shape[k] === null) {
           o[k] = (value) => topCensor(value, [k]);
         } else {
-          const wrappedCensor = typeof censor === "function" ? (value, path4) => {
-            return censor(value, [k, ...path4]);
+          const wrappedCensor = typeof censor === "function" ? (value, path5) => {
+            return censor(value, [k, ...path5]);
           } : censor;
           o[k] = fastRedact({
             paths: shape[k],
@@ -1355,10 +1355,10 @@ var require_atomic_sleep = __commonJS({
 var require_sonic_boom = __commonJS({
   "node_modules/.pnpm/sonic-boom@4.2.0/node_modules/sonic-boom/index.js"(exports2, module2) {
     "use strict";
-    var fs4 = require("fs");
+    var fs5 = require("fs");
     var EventEmitter = require("events");
     var inherits = require("util").inherits;
-    var path4 = require("path");
+    var path5 = require("path");
     var sleep = require_atomic_sleep();
     var assert = require("assert");
     var BUSY_WRITE_TIMEOUT = 100;
@@ -1413,21 +1413,21 @@ var require_sonic_boom = __commonJS({
       if (sonic.sync) {
         try {
           if (sonic.mkdir)
-            fs4.mkdirSync(path4.dirname(file), { recursive: true });
-          const fd = fs4.openSync(file, flags, mode);
+            fs5.mkdirSync(path5.dirname(file), { recursive: true });
+          const fd = fs5.openSync(file, flags, mode);
           fileOpened(null, fd);
         } catch (err) {
           fileOpened(err);
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs4.mkdir(path4.dirname(file), { recursive: true }, (err) => {
+        fs5.mkdir(path5.dirname(file), { recursive: true }, (err) => {
           if (err)
             return fileOpened(err);
-          fs4.open(file, flags, mode, fileOpened);
+          fs5.open(file, flags, mode, fileOpened);
         });
       } else {
-        fs4.open(file, flags, mode, fileOpened);
+        fs5.open(file, flags, mode, fileOpened);
       }
     }
     function SonicBoom(opts) {
@@ -1468,16 +1468,16 @@ var require_sonic_boom = __commonJS({
         this.flush = flushBuffer;
         this.flushSync = flushBufferSync;
         this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs4.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs4.write(this.fd, this._writingBuf, this.release);
+        fsWriteSync = () => fs5.writeSync(this.fd, this._writingBuf);
+        fsWrite = () => fs5.write(this.fd, this._writingBuf, this.release);
       } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
         this._writingBuf = "";
         this.write = write;
         this.flush = flush;
         this.flushSync = flushSync;
         this._actualWrite = actualWrite;
-        fsWriteSync = () => fs4.writeSync(this.fd, this._writingBuf, "utf8");
-        fsWrite = () => fs4.write(this.fd, this._writingBuf, "utf8", this.release);
+        fsWriteSync = () => fs5.writeSync(this.fd, this._writingBuf, "utf8");
+        fsWrite = () => fs5.write(this.fd, this._writingBuf, "utf8", this.release);
       } else {
         throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
       }
@@ -1533,7 +1533,7 @@ var require_sonic_boom = __commonJS({
           }
         }
         if (this._fsync) {
-          fs4.fsyncSync(this.fd);
+          fs5.fsyncSync(this.fd);
         }
         const len = this._len;
         if (this._reopening) {
@@ -1646,7 +1646,7 @@ var require_sonic_boom = __commonJS({
       const onDrain = () => {
         if (!this._fsync) {
           try {
-            fs4.fsync(this.fd, (err) => {
+            fs5.fsync(this.fd, (err) => {
               this._flushPending = false;
               cb(err);
             });
@@ -1748,7 +1748,7 @@ var require_sonic_boom = __commonJS({
       const fd = this.fd;
       this.once("ready", () => {
         if (fd !== this.fd) {
-          fs4.close(fd, (err) => {
+          fs5.close(fd, (err) => {
             if (err) {
               return this.emit("error", err);
             }
@@ -1797,7 +1797,7 @@ var require_sonic_boom = __commonJS({
           buf = this._bufs[0];
         }
         try {
-          const n = fs4.writeSync(this.fd, buf, "utf8");
+          const n = fs5.writeSync(this.fd, buf, "utf8");
           const releasedBufObj = releaseWritingBuf(buf, this._len, n);
           buf = releasedBufObj.writingBuf;
           this._len = releasedBufObj.len;
@@ -1813,7 +1813,7 @@ var require_sonic_boom = __commonJS({
         }
       }
       try {
-        fs4.fsyncSync(this.fd);
+        fs5.fsyncSync(this.fd);
       } catch {
       }
     }
@@ -1834,7 +1834,7 @@ var require_sonic_boom = __commonJS({
           buf = mergeBuf(this._bufs[0], this._lens[0]);
         }
         try {
-          const n = fs4.writeSync(this.fd, buf);
+          const n = fs5.writeSync(this.fd, buf);
           buf = buf.subarray(n);
           this._len = Math.max(this._len - n, 0);
           if (buf.length <= 0) {
@@ -1862,13 +1862,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf || this._bufs.shift() || "";
       if (this.sync) {
         try {
-          const written = fs4.writeSync(this.fd, this._writingBuf, "utf8");
+          const written = fs5.writeSync(this.fd, this._writingBuf, "utf8");
           release(null, written);
         } catch (err) {
           release(err);
         }
       } else {
-        fs4.write(this.fd, this._writingBuf, "utf8", release);
+        fs5.write(this.fd, this._writingBuf, "utf8", release);
       }
     }
     function actualWriteBuffer() {
@@ -1877,7 +1877,7 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
       if (this.sync) {
         try {
-          const written = fs4.writeSync(this.fd, this._writingBuf);
+          const written = fs5.writeSync(this.fd, this._writingBuf);
           release(null, written);
         } catch (err) {
           release(err);
@@ -1886,7 +1886,7 @@ var require_sonic_boom = __commonJS({
         if (kCopyBuffer) {
           this._writingBuf = Buffer.from(this._writingBuf);
         }
-        fs4.write(this.fd, this._writingBuf, release);
+        fs5.write(this.fd, this._writingBuf, release);
       }
     }
     function actualClose(sonic) {
@@ -1902,12 +1902,12 @@ var require_sonic_boom = __commonJS({
       sonic._lens = [];
       assert(typeof sonic.fd === "number", `sonic.fd must be a number, got ${typeof sonic.fd}`);
       try {
-        fs4.fsync(sonic.fd, closeWrapped);
+        fs5.fsync(sonic.fd, closeWrapped);
       } catch {
       }
       function closeWrapped() {
         if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs4.close(sonic.fd, done);
+          fs5.close(sonic.fd, done);
         } else {
           done();
         }
@@ -2166,7 +2166,7 @@ var require_thread_stream = __commonJS({
     var { version } = require_package();
     var { EventEmitter } = require("events");
     var { Worker } = require("worker_threads");
-    var { join: join4 } = require("path");
+    var { join: join6 } = require("path");
     var { pathToFileURL } = require("url");
     var { wait } = require_wait();
     var {
@@ -2202,7 +2202,7 @@ var require_thread_stream = __commonJS({
     function createWorker(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join4(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join6(__dirname, "lib", "worker.js");
       const worker = new Worker(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
@@ -2588,7 +2588,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = require("module");
     var getCallers = require_caller();
-    var { join: join4, isAbsolute, sep } = require("node:path");
+    var { join: join6, isAbsolute, sep } = require("node:path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -2651,7 +2651,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join4(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join6(__dirname, "worker.js");
         options.targets = targets.filter((dest) => dest.target).map((dest) => {
           return {
             ...dest,
@@ -2669,7 +2669,7 @@ var require_transport = __commonJS({
           });
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-worker"] || join4(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join6(__dirname, "worker.js");
         options.pipelines = [pipeline.map((dest) => {
           return {
             ...dest,
@@ -2691,7 +2691,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join4(__dirname, "..", "file.js");
+          return join6(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -3653,7 +3653,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join4 = ",";
+            let join6 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -3667,7 +3667,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join4 = `,
+                join6 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -3675,13 +3675,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join4;
+                res += join6;
               }
               const tmp = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join4}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join6}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -3702,7 +3702,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join4 = `,
+              join6 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -3716,13 +3716,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join4;
+                separator = join6;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join4;
+              separator = join6;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -3762,7 +3762,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join4 = ",";
+            let join6 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -3775,7 +3775,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join4 = `,
+                join6 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -3783,13 +3783,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join4;
+                res += join6;
               }
               const tmp = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join4}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join6}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -3802,7 +3802,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join4 = `,
+              join6 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -3811,7 +3811,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join4;
+                separator = join6;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -3868,20 +3868,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join5 = `,
+              const join7 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i = 0;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyIndent(String(i), value[i], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join5;
+                res2 += join7;
               }
               const tmp = stringifyIndent(String(i), value[i], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join5}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join7}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -3897,16 +3897,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join4 = `,
+            const join6 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join4, maximumBreadth);
+              res += stringifyTypedArray(value, join6, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join4;
+              separator = join6;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -3917,13 +3917,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join4;
+                separator = join6;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join4;
+              separator = join6;
             }
             if (separator !== "") {
               res = `
@@ -5212,7 +5212,7 @@ var require_dist3 = __commonJS({
       postJsonToApi: () => postJsonToApi,
       postToApi: () => postToApi,
       removeUndefinedEntries: () => removeUndefinedEntries,
-      resolve: () => resolve2,
+      resolve: () => resolve3,
       safeParseJSON: () => safeParseJSON,
       safeValidateTypes: () => safeValidateTypes,
       validateTypes: () => validateTypes,
@@ -5673,7 +5673,7 @@ var require_dist3 = __commonJS({
         throw error;
       }
     };
-    async function resolve2(value) {
+    async function resolve3(value) {
       if (typeof value === "function") {
         value = value();
       }
@@ -6308,8 +6308,8 @@ var require_parseUtil = __commonJS({
     var errors_1 = require_errors();
     var en_1 = __importDefault(require_en());
     var makeIssue2 = (params) => {
-      const { data, path: path4, errorMaps, issueData } = params;
-      const fullPath = [...path4, ...issueData.path || []];
+      const { data, path: path5, errorMaps, issueData } = params;
+      const fullPath = [...path5, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -6480,11 +6480,11 @@ var require_types = __commonJS({
     var util_1 = require_util();
     var ZodError_1 = require_ZodError();
     var ParseInputLazyPath2 = class {
-      constructor(parent, value, path4, key) {
+      constructor(parent, value, path5, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path4;
+        this._path = path5;
         this._key = key;
       }
       get path() {
@@ -14616,27 +14616,27 @@ ${user}:`]
       });
       const createChatModel = (modelId, settings = {}) => new OpenAIChatLanguageModel(modelId, settings, {
         provider: `${providerName}.chat`,
-        url: ({ path: path4 }) => `${baseURL}${path4}`,
+        url: ({ path: path5 }) => `${baseURL}${path5}`,
         headers: getHeaders,
         compatibility,
         fetch: options.fetch
       });
       const createCompletionModel = (modelId, settings = {}) => new OpenAICompletionLanguageModel(modelId, settings, {
         provider: `${providerName}.completion`,
-        url: ({ path: path4 }) => `${baseURL}${path4}`,
+        url: ({ path: path5 }) => `${baseURL}${path5}`,
         headers: getHeaders,
         compatibility,
         fetch: options.fetch
       });
       const createEmbeddingModel = (modelId, settings = {}) => new OpenAIEmbeddingModel(modelId, settings, {
         provider: `${providerName}.embedding`,
-        url: ({ path: path4 }) => `${baseURL}${path4}`,
+        url: ({ path: path5 }) => `${baseURL}${path5}`,
         headers: getHeaders,
         fetch: options.fetch
       });
       const createImageModel = (modelId, settings = {}) => new OpenAIImageModel(modelId, settings, {
         provider: `${providerName}.image`,
-        url: ({ path: path4 }) => `${baseURL}${path4}`,
+        url: ({ path: path5 }) => `${baseURL}${path5}`,
         headers: getHeaders,
         fetch: options.fetch
       });
@@ -14657,7 +14657,7 @@ ${user}:`]
       const createResponsesModel = (modelId) => {
         return new OpenAIResponsesLanguageModel(modelId, {
           provider: `${providerName}.responses`,
-          url: ({ path: path4 }) => `${baseURL}${path4}`,
+          url: ({ path: path5 }) => `${baseURL}${path5}`,
           headers: getHeaders,
           fetch: options.fetch
         });
@@ -17857,11 +17857,11 @@ var require_dist7 = __commonJS({
         return Promise.all(
           Array.from(attachmentsFromOptions).map(async (attachment) => {
             const { name, type } = attachment;
-            const dataUrl = await new Promise((resolve2, reject) => {
+            const dataUrl = await new Promise((resolve3, reject) => {
               const reader = new FileReader();
               reader.onload = (readerEvent) => {
                 var _a;
-                resolve2((_a = readerEvent.target) == null ? void 0 : _a.result);
+                resolve3((_a = readerEvent.target) == null ? void 0 : _a.result);
               };
               reader.onerror = (error) => reject(error);
               reader.readAsDataURL(attachment);
@@ -19860,11 +19860,11 @@ var require_dist8 = __commonJS({
       } catch (error) {
         safeEnqueue((0, import_ui_utils.formatDataStreamPart)("error", onError(error)));
       }
-      const waitForStreams = new Promise(async (resolve2) => {
+      const waitForStreams = new Promise(async (resolve3) => {
         while (ongoingStreamPromises.length > 0) {
           await ongoingStreamPromises.shift();
         }
-        resolve2();
+        resolve3();
       });
       waitForStreams.finally(() => {
         try {
@@ -22620,13 +22620,13 @@ var require_dist8 = __commonJS({
         if (this.promise) {
           return this.promise;
         }
-        this.promise = new Promise((resolve2, reject) => {
+        this.promise = new Promise((resolve3, reject) => {
           if (this.status.type === "resolved") {
-            resolve2(this.status.value);
+            resolve3(this.status.value);
           } else if (this.status.type === "rejected") {
             reject(this.status.error);
           }
-          this._resolve = resolve2;
+          this._resolve = resolve3;
           this._reject = reject;
         });
         return this.promise;
@@ -22647,15 +22647,15 @@ var require_dist8 = __commonJS({
       }
     };
     function createResolvablePromise() {
-      let resolve2;
+      let resolve3;
       let reject;
       const promise = new Promise((res, rej) => {
-        resolve2 = res;
+        resolve3 = res;
         reject = rej;
       });
       return {
         promise,
-        resolve: resolve2,
+        resolve: resolve3,
         reject
       };
     }
@@ -26496,9 +26496,9 @@ var require_dist8 = __commonJS({
         this.url = new URL(url);
       }
       async start() {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve3, reject) => {
           if (this.connected) {
-            return resolve2();
+            return resolve3();
           }
           this.abortController = new AbortController();
           const establishConnection = async () => {
@@ -26542,7 +26542,7 @@ var require_dist8 = __commonJS({
                         });
                       }
                       this.connected = true;
-                      resolve2();
+                      resolve3();
                     } else if (event === "message") {
                       try {
                         const message = JSONRPCMessageSchema.parse(
@@ -26717,7 +26717,7 @@ var require_dist8 = __commonJS({
         resultSchema,
         options
       }) {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve3, reject) => {
           if (this.isClosed) {
             return reject(
               new MCPClientError({
@@ -26750,7 +26750,7 @@ var require_dist8 = __commonJS({
             }
             try {
               const result = resultSchema.parse(response.result);
-              resolve2(result);
+              resolve3(result);
             } catch (error) {
               const parseError = new MCPClientError({
                 message: "Failed to parse server initialization result",
@@ -30006,18 +30006,18 @@ var require_cjs2 = __commonJS({
           queue.dequeue()();
         }
       };
-      const run = async (fn, resolve2, ...args) => {
+      const run = async (fn, resolve3, ...args) => {
         activeCount++;
         const result = (async () => fn(...args))();
-        resolve2(result);
+        resolve3(result);
         try {
           await result;
         } catch {
         }
         next();
       };
-      const enqueue = (fn, resolve2, ...args) => {
-        queue.enqueue(run.bind(null, fn, resolve2, ...args));
+      const enqueue = (fn, resolve3, ...args) => {
+        queue.enqueue(run.bind(null, fn, resolve3, ...args));
         (async () => {
           await Promise.resolve();
           if (activeCount < concurrency && queue.size > 0) {
@@ -30025,8 +30025,8 @@ var require_cjs2 = __commonJS({
           }
         })();
       };
-      const generator = (fn, ...args) => new Promise((resolve2) => {
-        enqueue(fn, resolve2, ...args);
+      const generator = (fn, ...args) => new Promise((resolve3) => {
+        enqueue(fn, resolve3, ...args);
       });
       Object.defineProperties(generator, {
         activeCount: {
@@ -30092,7 +30092,7 @@ var require_cjs2 = __commonJS({
                 };
               } else {
                 retryCount++;
-                await new Promise((resolve2) => setTimeout(resolve2, this.retryDelay));
+                await new Promise((resolve3) => setTimeout(resolve3, this.retryDelay));
                 completed = false;
               }
             } else {
@@ -31713,7 +31713,7 @@ async function installDependencies(projectPath) {
     );
     return false;
   }
-  return new Promise((resolve2) => {
+  return new Promise((resolve3) => {
     const spinner = (0, import_ora.default)(
       `Installing dependencies with ${packageManager}...`
     ).start();
@@ -31727,13 +31727,13 @@ async function installDependencies(projectPath) {
         spinner.succeed(
           `Dependencies installed successfully with ${packageManager}`
         );
-        resolve2(true);
+        resolve3(true);
       } else {
         spinner.fail(`Failed to install dependencies (exit code: ${code})`);
         console.log(
           `Please run '${packageManager} install' in the project directory manually.`
         );
-        resolve2(false);
+        resolve3(false);
       }
     });
     installProcess.on("error", (err) => {
@@ -31741,7 +31741,7 @@ async function installDependencies(projectPath) {
       console.log(
         `Please run '${packageManager} install' in the project directory manually.`
       );
-      resolve2(false);
+      resolve3(false);
     });
   });
 }
@@ -31813,7 +31813,7 @@ async function withSpinner(message, task) {
   }
 }
 function executeCommand(command, args, options) {
-  return new Promise((resolve2) => {
+  return new Promise((resolve3) => {
     const spinner = (0, import_ora.default)(options.message).start();
     const process2 = (0, import_child_process.spawn)(command, args, {
       cwd: options.cwd,
@@ -31822,15 +31822,15 @@ function executeCommand(command, args, options) {
     process2.on("close", (code) => {
       if (code === 0) {
         spinner.succeed(`${options.message} completed successfully`);
-        resolve2(true);
+        resolve3(true);
       } else {
         spinner.fail(`${options.message} failed (exit code: ${code})`);
-        resolve2(false);
+        resolve3(false);
       }
     });
     process2.on("error", (err) => {
       spinner.fail(`${options.message} error: ${err.message}`);
-      resolve2(false);
+      resolve3(false);
     });
   });
 }
@@ -32388,9 +32388,9 @@ ${usageExamples}
 }
 
 // src/cli/index.ts
-var import_inquirer2 = __toESM(require("inquirer"));
-var import_fs4 = require("fs");
-var import_path6 = require("path");
+var import_inquirer3 = __toESM(require("inquirer"));
+var import_fs5 = require("fs");
+var import_path7 = require("path");
 var import_dotenv = __toESM(require("dotenv"));
 
 // src/generators/index.ts
@@ -32401,8 +32401,8 @@ function ensureDir(dir) {
     (0, import_fs2.mkdirSync)(dir, { recursive: true });
   }
 }
-function createFile(path4, content) {
-  (0, import_fs2.writeFileSync)(path4, content);
+function createFile(path5, content) {
+  (0, import_fs2.writeFileSync)(path5, content);
 }
 function generatePackageJson(projectPath, options) {
   const packageJson = {
@@ -33484,8 +33484,8 @@ function getErrorMap() {
   return overrideErrorMap;
 }
 var makeIssue = (params) => {
-  const { data, path: path4, errorMaps, issueData } = params;
-  const fullPath = [...path4, ...issueData.path || []];
+  const { data, path: path5, errorMaps, issueData } = params;
+  const fullPath = [...path5, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -33615,11 +33615,11 @@ var errorUtil;
 var _ZodEnum_cache;
 var _ZodNativeEnum_cache;
 var ParseInputLazyPath = class {
-  constructor(parent, value, path4, key) {
+  constructor(parent, value, path5, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path4;
+    this._path = path5;
     this._key = key;
   }
   get path() {
@@ -37357,17 +37357,17 @@ var AgentKit = class {
     let isValid2 = true;
     const visited = {};
     const recursionStack = {};
-    const checkCircular = (toolName, path4 = []) => {
+    const checkCircular = (toolName, path5 = []) => {
       if (!visited[toolName]) {
         visited[toolName] = true;
         recursionStack[toolName] = true;
         const tool = this.tools[toolName];
         if (tool.dependencies) {
           for (const dep of tool.dependencies) {
-            if (!visited[dep] && checkCircular(dep, [...path4, toolName])) {
+            if (!visited[dep] && checkCircular(dep, [...path5, toolName])) {
               return true;
             } else if (recursionStack[dep]) {
-              const cycle = [...path4, toolName, dep].join(" -> ");
+              const cycle = [...path5, toolName, dep].join(" -> ");
               const warningMsg = `Circular dependency detected: ${cycle}`;
               this.warnings.push(warningMsg);
               this.memory.warnings.push(warningMsg);
@@ -37587,8 +37587,7 @@ When creating a tool implementation:
 
 1. WRITE DIRECT CODE that uses the parameters directly
 2. DO NOT create nested function definitions
-3. Include proper error handling with try/catch where appropriate
-4. End your implementation with a return statement in this format:
+3. End your implementation with a return statement in this format:
 
 return {
  status: "success",
@@ -37760,7 +37759,7 @@ function registerCLITools() {
         console.log("==============================================");
         const formattedInstructions = instructions.length > 0 ? instructions.map((instr) => `    "${instr.replace(/"/g, '\\"')}"`).join(",\n") : '    "Assist users with their requests in a helpful manner."';
         const formattedTools = tools.length > 0 ? tools.map((tool) => `    "${tool}"`).join(",\n") : "";
-        const content = `import AgentKit from "../core/agent-kit";
+        const content = `import AgentKit from "../core/agent-kit.js";
 
 /**
  * ${description}
@@ -38354,17 +38353,398 @@ function createCLIIntegration(config) {
   return new CLIIntegration(config);
 }
 
+// src/cli/deploy.ts
+var import_inquirer2 = __toESM(require("inquirer"));
+var import_fs4 = __toESM(require("fs"));
+var import_path6 = require("path");
+var path4 = __toESM(require("path"));
+function copyDirSync(src, dest) {
+  if (!(0, import_fs4.existsSync)(dest)) {
+    (0, import_fs4.mkdirSync)(dest, { recursive: true });
+  }
+  const entries = (0, import_fs4.readdirSync)(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = (0, import_path6.join)(src, entry.name);
+    const destPath = (0, import_path6.join)(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      (0, import_fs4.writeFileSync)(destPath, (0, import_fs4.readFileSync)(srcPath));
+    }
+  }
+}
+function removeDirSync(dir) {
+  if (!(0, import_fs4.existsSync)(dir))
+    return;
+  const entries = (0, import_fs4.readdirSync)(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path4.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      removeDirSync(fullPath);
+    } else {
+      import_fs4.default.unlinkSync(fullPath);
+    }
+  }
+  import_fs4.default.rmdirSync(dir);
+}
+async function deployToAlexaSkill(projectPath, inputOptions = {}) {
+  console.log(`
+  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+  \u2551       Vane Alexa Deployment         \u2551
+  \u2551                                     \u2551
+  \u2551   Integrate your AI agent with      \u2551
+  \u2551        your Alexa skill             \u2551
+  \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D
+  `);
+  try {
+    projectPath = (0, import_path6.resolve)(projectPath);
+    logger.info("Project path:", projectPath);
+    if (!(0, import_fs4.existsSync)(projectPath)) {
+      throw new Error(`Project directory '${projectPath}' does not exist`);
+    }
+    const distPath = (0, import_path6.join)(projectPath, "dist");
+    if (!(0, import_fs4.existsSync)(distPath)) {
+      throw new Error(
+        `Dist directory not found. Please build your project first with 'vanekit build'.`
+      );
+    }
+    const options = await collectDeployOptions(projectPath, inputOptions);
+    const alexaSkillPath = (0, import_path6.resolve)(options.alexaSkillPath);
+    if (!(0, import_fs4.existsSync)(alexaSkillPath)) {
+      throw new Error(
+        `Alexa skill directory '${alexaSkillPath}' does not exist`
+      );
+    }
+    const lambdaPath = (0, import_path6.join)(alexaSkillPath, "lambda");
+    const customPath = (0, import_path6.join)(lambdaPath, "custom");
+    const utilsPath = (0, import_path6.join)(customPath, "utils");
+    if (!(0, import_fs4.existsSync)(lambdaPath))
+      (0, import_fs4.mkdirSync)(lambdaPath, { recursive: true });
+    if (!(0, import_fs4.existsSync)(customPath))
+      (0, import_fs4.mkdirSync)(customPath, { recursive: true });
+    if (!(0, import_fs4.existsSync)(utilsPath))
+      (0, import_fs4.mkdirSync)(utilsPath, { recursive: true });
+    const targetAgentPath = (0, import_path6.join)(customPath, options.agentName);
+    await withSpinner(`Copying agent to ${targetAgentPath}...`, async () => {
+      if ((0, import_fs4.existsSync)(targetAgentPath)) {
+        removeDirSync(targetAgentPath);
+      }
+      (0, import_fs4.mkdirSync)(targetAgentPath, { recursive: true });
+      copyDirSync(distPath, targetAgentPath);
+      logger.info(`Agent copied to ${targetAgentPath}`);
+      return true;
+    });
+    const wrapperPath = (0, import_path6.join)(utilsPath, `${options.agentName}.js`);
+    await withSpinner(
+      `Creating agent wrapper at ${wrapperPath}...`,
+      async () => {
+        const wrapperContent = generateWrapperFunction(options.agentName);
+        (0, import_fs4.writeFileSync)(wrapperPath, wrapperContent);
+        return true;
+      }
+    );
+    const handlersPath = (0, import_path6.join)(customPath, "handlers");
+    if (!(0, import_fs4.existsSync)(handlersPath))
+      (0, import_fs4.mkdirSync)(handlersPath, { recursive: true });
+    const handlerPath = (0, import_path6.join)(handlersPath, `${options.agentName}Handler.js`);
+    await withSpinner(
+      `Creating example handler at ${handlerPath}...`,
+      async () => {
+        const handlerContent = generateExampleHandler(options.agentName);
+        (0, import_fs4.writeFileSync)(handlerPath, handlerContent);
+        return true;
+      }
+    );
+    const intentName = options.agentName.includes("-") ? capitalizeFirstLetter(options.agentName.replace(/-/g, "")) : capitalizeFirstLetter(options.agentName);
+    const interactionModelSnippet = `
+{
+  "name": "${intentName}Intent",
+  "slots": [
+    {
+      "name": "query",
+      "type": "AMAZON.SearchQuery"
+    }
+  ],
+  "samples": [
+    "ask about {query}",
+    "tell me about {query}",
+    "what is {query}",
+    "check {query}",
+    "get information about {query}",
+    "lookup {query}"
+  ]
+}`;
+    const handlerName = intentName + "IntentHandler";
+    console.log(`
+\u2705 Deployment completed successfully!
+
+Your agent has been deployed to: ${targetAgentPath}
+A wrapper function has been created at: ${wrapperPath}
+An example handler has been created at: ${handlerPath}
+
+To use your agent in your Alexa skill:
+
+1. Add the following to your index.js:
+
+const ${handlerName} = require('./handlers/${options.agentName}Handler');
+
+// Add to your skill builder
+const skillBuilder = Alexa.SkillBuilders.custom()
+  .addRequestHandlers(
+    // ... your existing handlers
+    ${handlerName}
+  )
+  .lambda();
+
+2. Add this intent to your interaction model:
+${interactionModelSnippet}
+
+3. Build and deploy your Alexa skill
+`);
+    return {
+      status: "success",
+      deployPath: targetAgentPath,
+      message: `Agent successfully deployed to ${targetAgentPath}`
+    };
+  } catch (error) {
+    logger.error("Deployment failed:", error.message);
+    return {
+      status: "error",
+      message: error.message
+    };
+  }
+}
+async function collectDeployOptions(projectPath, inputOptions) {
+  let projectName = inputOptions.projectName;
+  if (!projectName) {
+    try {
+      const packageJsonPath = (0, import_path6.join)(projectPath, "package.json");
+      if ((0, import_fs4.existsSync)(packageJsonPath)) {
+        const packageJson = JSON.parse((0, import_fs4.readFileSync)(packageJsonPath, "utf-8"));
+        projectName = packageJson.name;
+      }
+    } catch (error) {
+      logger.warn("Could not read package.json to determine project name");
+    }
+  }
+  if (!projectName) {
+    projectName = projectPath.split("/").pop() || "vane-agent";
+  }
+  const { alexaSkillPath } = await import_inquirer2.default.prompt([
+    {
+      type: "input",
+      name: "alexaSkillPath",
+      message: "Enter the path to your Alexa skill root directory:",
+      default: inputOptions.alexaSkillPath || "../Alexa-skills/vanewallet"
+    }
+  ]);
+  const resolvedSkillPath = (0, import_path6.resolve)(alexaSkillPath);
+  if (!(0, import_fs4.existsSync)(resolvedSkillPath)) {
+    throw new Error(`Alexa skill directory not found at: ${resolvedSkillPath}`);
+  }
+  const { agentName } = await import_inquirer2.default.prompt([
+    {
+      type: "input",
+      name: "agentName",
+      message: "What name would you like to use for the agent in your Alexa skill?",
+      default: inputOptions.agentName || "vane-agent"
+    }
+  ]);
+  return {
+    projectPath,
+    projectName,
+    alexaSkillPath,
+    agentName
+  };
+}
+function generateWrapperFunction(agentName) {
+  return `// Auto-generated wrapper for ${agentName}
+const path = require('path');
+
+/**
+ * Simple wrapper for the Vane AI agent
+ * @param {string} prompt - The user's query or prompt
+ * @param {Object} [options] - Optional configuration
+ * @returns {Promise<string>} - The agent's response
+ */
+async function queryAgent(prompt, options = {}) {
+  try {
+    // Dynamically import the agent (only once)
+    if (!queryAgent.agent) {
+      const agentPath = path.join(__dirname, '..', '${agentName}');
+      console.log('Loading agent from:', agentPath);
+      
+      try {
+        // Using require instead of import for compatibility
+        const agentModule = require(agentPath);
+        
+        // The agent might be the default export or named export
+        queryAgent.agent = agentModule.default || agentModule.agent || agentModule;
+        
+        if (!queryAgent.agent || typeof queryAgent.agent !== 'function') {
+          console.error('Agent not found or not a function in module:', Object.keys(agentModule));
+          
+          // Try to find any function export that could be the agent
+          for (const key in agentModule) {
+            if (typeof agentModule[key] === 'function') {
+              console.log('Found potential agent function:', key);
+              queryAgent.agent = agentModule[key];
+              break;
+            }
+          }
+          
+          // If still not found, use the whole module as a fallback
+          if (!queryAgent.agent || typeof queryAgent.agent !== 'function') {
+            console.warn('Could not identify agent function, using module as agent');
+            queryAgent.agent = agentModule;
+          }
+        }
+        
+        // Initialize agent if needed
+        if (typeof queryAgent.agent.initialize === 'function') {
+          console.log('Initializing agent...');
+          await queryAgent.agent.initialize();
+        }
+      } catch (error) {
+        console.error('Error importing agent:', error);
+        throw error;
+      }
+    }
+    
+    // Send query to agent
+    console.log('Sending query to agent:', prompt);
+    let response;
+    
+    if (typeof queryAgent.agent === 'function') {
+      response = await queryAgent.agent(prompt, options);
+    } else if (queryAgent.agent && typeof queryAgent.agent.query === 'function') {
+      response = await queryAgent.agent.query(prompt, options);
+    } else if (queryAgent.agent && typeof queryAgent.agent.run === 'function') {
+      response = await queryAgent.agent.run(prompt, options);
+    } else {
+      throw new Error('Could not determine how to invoke the agent');
+    }
+    
+    console.log('Received response from agent');
+    return response;
+  } catch (error) {
+    console.error('Error querying agent:', error);
+    return 'I encountered an error while processing your request. ' + error.message;
+  }
+}
+
+// Export the wrapper function
+module.exports = {
+  queryAgent
+};
+`;
+}
+function generateExampleHandler(agentName) {
+  const intentName = agentName.includes("-") ? capitalizeFirstLetter(agentName.replace(/-/g, "")) : capitalizeFirstLetter(agentName);
+  const handlerName = intentName + "IntentHandler";
+  return `// Auto-generated handler for ${agentName}
+const Alexa = require('ask-sdk-core');
+const { queryAgent } = require('../utils/${agentName}');
+
+/**
+ * Handler for ${intentName} queries
+ */
+const ${handlerName} = {
+  canHandle(handlerInput) {
+    return (
+      Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+      Alexa.getIntentName(handlerInput.requestEnvelope) === '${intentName}Intent'
+    );
+  },
+  async handle(handlerInput) {
+    // Get the user's query from the slot
+    const query = Alexa.getSlotValue(handlerInput.requestEnvelope, 'query') || 
+                  'What is the current price of Ethereum?';
+    
+    try {
+      console.log('${handlerName} received query:', query);
+      
+      // Query the agent
+      const response = await queryAgent(query, {
+        // You can add options here as needed
+        userId: handlerInput.requestEnvelope.session.user.userId
+      });
+      
+      console.log('Agent response:', response);
+      
+      return handlerInput.responseBuilder
+        .speak(response)
+        .reprompt('Is there anything else you would like to know?')
+        .getResponse();
+    } catch (error) {
+      console.error('Error in ${handlerName}:', error);
+      
+      return handlerInput.responseBuilder
+        .speak('I had trouble accessing that information right now. Please try again later.')
+        .getResponse();
+    }
+  }
+};
+
+module.exports = ${handlerName};
+`;
+}
+function capitalizeFirstLetter(string) {
+  if (!string)
+    return "";
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+async function handleDeploy(config, projectId) {
+  try {
+    const projectPath = config.projectPath;
+    if (!(0, import_fs4.existsSync)(path4.join(projectPath, "dist"))) {
+      const { shouldBuild } = await import_inquirer2.default.prompt([
+        {
+          type: "confirm",
+          name: "shouldBuild",
+          message: "Project needs to be built first. Build now?",
+          default: true
+        }
+      ]);
+      if (shouldBuild) {
+        console.log("Building project before deployment...");
+        const buildResult = await buildProject(projectPath, {
+          projectName: config.projectName,
+          skipDependencyPrompt: false
+        });
+        if (buildResult.status === "error") {
+          console.error(`Build failed: ${buildResult.message}`);
+          return;
+        }
+      } else {
+        console.log(
+          'Deployment canceled. Please build the project first with "vanekit build".'
+        );
+        return;
+      }
+    }
+    const result = await deployToAlexaSkill(projectPath, {
+      projectName: config.projectName
+    });
+    if (result.status === "error") {
+      console.error(`\u274C Deployment failed: ${result.message}`);
+    }
+  } catch (error) {
+    console.error(`\u274C Deployment failed: ${error.message}`);
+  }
+}
+
 // src/cli/index.ts
 import_dotenv.default.config();
 function saveConfig(config) {
-  const configPath = (0, import_path6.join)(process.cwd(), ".vanekit-config.json");
-  (0, import_fs4.writeFileSync)(configPath, JSON.stringify(config, null, 2));
+  const configPath = (0, import_path7.join)(process.cwd(), ".vanekit-config.json");
+  (0, import_fs5.writeFileSync)(configPath, JSON.stringify(config, null, 2));
 }
 function loadConfig() {
-  const configPath = (0, import_path6.join)(process.cwd(), ".vanekit-config.json");
-  if ((0, import_fs4.existsSync)(configPath)) {
+  const configPath = (0, import_path7.join)(process.cwd(), ".vanekit-config.json");
+  if ((0, import_fs5.existsSync)(configPath)) {
     try {
-      const config = JSON.parse((0, import_fs4.readFileSync)(configPath, "utf-8"));
+      const config = JSON.parse((0, import_fs5.readFileSync)(configPath, "utf-8"));
       return config;
     } catch (error) {
       console.error("Failed to parse configuration file:", error);
@@ -38374,7 +38754,7 @@ function loadConfig() {
 }
 async function configureAPIKeys(config) {
   if (config.apiKeys && config.apiKeys.openai) {
-    const { useExisting } = await import_inquirer2.default.prompt([
+    const { useExisting } = await import_inquirer3.default.prompt([
       {
         type: "confirm",
         name: "useExisting",
@@ -38386,7 +38766,7 @@ async function configureAPIKeys(config) {
       return config.apiKeys;
   }
   console.log("\n\u{1F511} API Key Configuration");
-  const apiKeys = await import_inquirer2.default.prompt([
+  const apiKeys = await import_inquirer3.default.prompt([
     {
       type: "password",
       name: "openai",
@@ -38409,7 +38789,7 @@ async function configureAPIKeys(config) {
   return apiKeys;
 }
 async function createProject() {
-  const { projectName } = await import_inquirer2.default.prompt([
+  const { projectName } = await import_inquirer3.default.prompt([
     {
       type: "input",
       name: "projectName",
@@ -38417,7 +38797,7 @@ async function createProject() {
       default: "my-vane-project"
     }
   ]);
-  const { projectDescription } = await import_inquirer2.default.prompt([
+  const { projectDescription } = await import_inquirer3.default.prompt([
     {
       type: "input",
       name: "projectDescription",
@@ -38425,9 +38805,9 @@ async function createProject() {
       default: "An AI agent system built with vane"
     }
   ]);
-  const projectPath = (0, import_path6.resolve)(projectName.toLowerCase().replace(/\s+/g, "-"));
-  if (!(0, import_fs4.existsSync)(projectPath)) {
-    (0, import_fs4.mkdirSync)(projectPath, { recursive: true });
+  const projectPath = (0, import_path7.resolve)(projectName.toLowerCase().replace(/\s+/g, "-"));
+  if (!(0, import_fs5.existsSync)(projectPath)) {
+    (0, import_fs5.mkdirSync)(projectPath, { recursive: true });
   }
   const spinner = (0, import_ora3.default)("Generating project files...").start();
   try {
@@ -38442,8 +38822,8 @@ async function createProject() {
       lastInteraction: /* @__PURE__ */ new Date(),
       savedConversation: []
     };
-    const configPath = (0, import_path6.join)(projectPath, ".vanekit-config.json");
-    (0, import_fs4.writeFileSync)(configPath, JSON.stringify(config, null, 2));
+    const configPath = (0, import_path7.join)(projectPath, ".vanekit-config.json");
+    (0, import_fs5.writeFileSync)(configPath, JSON.stringify(config, null, 2));
     console.log(`Configuration saved to ${configPath}`);
   } catch (error) {
     spinner.fail(`Failed to set up project: ${error.message}`);
@@ -38459,10 +38839,6 @@ async function createProject() {
   To continue the conversation with Vane:
     vanekit chat ${projectPath}  
   `);
-}
-async function handleDeploy(config, projectId) {
-  console.log("\u274C Storage is not initialized");
-  return;
 }
 async function startChat(config) {
   console.log(`
@@ -38500,7 +38876,7 @@ You're working on project: ${config.projectName}
   };
   let chatting = true;
   while (chatting) {
-    const { message } = await import_inquirer2.default.prompt([
+    const { message } = await import_inquirer3.default.prompt([
       {
         type: "input",
         name: "message",
@@ -38585,7 +38961,7 @@ async function main() {
   const existingConfig = loadConfig();
   if (existingConfig) {
     console.log(`Found existing project: ${existingConfig.projectName}`);
-    const { action } = await import_inquirer2.default.prompt([
+    const { action } = await import_inquirer3.default.prompt([
       {
         type: "list",
         name: "action",
@@ -38594,7 +38970,7 @@ async function main() {
           { name: "Continue working on this project", value: "continue" },
           { name: "Create a new project", value: "new" },
           { name: "Build project for deployment", value: "build" },
-          { name: "Deploy website", value: "deploy" },
+          { name: "Deploy project", value: "deploy" },
           { name: "Install dependencies", value: "install" },
           { name: "Exit", value: "exit" }
         ]
@@ -38621,7 +38997,7 @@ async function main() {
         }
         break;
       case "deploy":
-        console.log("\u274C Deployment integration is not yet enabled");
+        await handleDeploy(existingConfig, existingConfig.projectName);
         break;
       case "exit":
         console.log("\u{1F44B} Goodbye!");
@@ -38629,7 +39005,7 @@ async function main() {
         break;
     }
   } else {
-    const { createNew } = await import_inquirer2.default.prompt([
+    const { createNew } = await import_inquirer3.default.prompt([
       {
         type: "confirm",
         name: "createNew",

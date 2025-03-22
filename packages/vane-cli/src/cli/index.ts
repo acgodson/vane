@@ -8,6 +8,7 @@ import { generateFiles } from "../generators";
 import ora from "ora";
 import createCLIIntegration from "./integration";
 import { buildProjectFiles, installDependencies } from "./utils";
+import { handleDeploy } from "./deploy";
 
 dotenv.config();
 
@@ -139,11 +140,6 @@ async function createProject() {
   To continue the conversation with Vane:
     vanekit chat ${projectPath}  
   `);
-}
-
-async function handleDeploy(config: any, projectId: string) {
-  console.log("❌ Storage is not initialized");
-  return;
 }
 
 // Start the chat functionality with our vane CLI agent
@@ -315,7 +311,7 @@ async function main() {
           { name: "Continue working on this project", value: "continue" },
           { name: "Create a new project", value: "new" },
           { name: "Build project for deployment", value: "build" },
-          { name: "Deploy website", value: "deploy" },
+          { name: "Deploy project", value: "deploy" },
           { name: "Install dependencies", value: "install" },
           { name: "Exit", value: "exit" },
         ],
