@@ -50,10 +50,6 @@ An Alexa skill that allows users to interact with their Ethereum wallet through 
    * Response: "I've sent Bob's wallet address to the Alexa app"
    * Card URL: `https://vanewallet.com/viewcontact?userId={alexaUserId}&contact=Bob`
 
-3. **Import from Short Code**
-   * Invocation: "Alexa, import from short code ABC123"
-   * Response: "I've sent a link to the Alexa app where you can import the address for shortcode ABC123"
-   * Card URL: `https://vanewallet.com/addcontact?userId={alexaUserId}&shortCode=ABC123`
 
 ## Security Features
 

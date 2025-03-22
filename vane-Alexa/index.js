@@ -1,5 +1,4 @@
 const Alexa = require("ask-sdk-core");
-const AWS = require("aws-sdk");
 
 // Import handlers and helpers
 const {

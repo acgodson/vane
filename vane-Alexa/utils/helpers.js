@@ -1,4 +1,7 @@
 //utils/helpers.js
+
+require("dotenv").config();
+
 const AWS = require("aws-sdk");
 const axios = require("axios");
 
@@ -25,16 +28,40 @@ const TRIVIA_QUESTIONS = [
   },
 ];
 
-// Helper function to get secrets from AWS Secrets Manager
 async function getSecrets(secretName) {
-  try {
-    const data = await secretsManager
-      .getSecretValue({ SecretId: secretName })
-      .promise();
-    return JSON.parse(data.SecretString);
-  } catch (error) {
-    console.error("Error retrieving secrets:", error);
-    throw error;
+  if (
+    process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === "local"
+  ) {
+    console.log(
+      `Loading secrets for ${secretName} from local environment variables`
+    );
+    const secretMappings = {
+      PrivyWalletCredentials: {
+        appId: process.env.PRIVY_APP_ID,
+        appSecret: process.env.PRIVY_APP_SECRET,
+        policyId: process.env.PRIVY_POLICY_ID,
+      },
+    };
+    // Return the mapped secrets if they exist
+    if (secretMappings[secretName]) {
+      return secretMappings[secretName];
+    } else {
+      throw new Error(
+        `Secret mapping for ${secretName} not found in local environment`
+      );
+    }
+  } else {
+    // Production flow - use AWS Secrets Manager
+    try {
+      const data = await secretsManager
+        .getSecretValue({ SecretId: secretName })
+        .promise();
+      return JSON.parse(data.SecretString);
+    } catch (error) {
+      console.error("Error retrieving secrets from AWS:", error);
+      throw error;
+    }
   }
 }
 
@@ -59,7 +86,6 @@ async function getUserWalletId(userId) {
   }
 }
 
-// Helper function to make authenticated requests to Privy API
 async function makePrivyRequest(endpoint, method, data = null, userId = null) {
   try {
     // Get secrets for Privy authentication
@@ -74,8 +100,10 @@ async function makePrivyRequest(endpoint, method, data = null, userId = null) {
 
     let finalEndpoint = endpoint;
 
-    const walletId = await getUserWalletId(userId);
-    finalEndpoint = endpoint.replace("<wallet_id>", walletId);
+    if (userId && endpoint.includes("<wallet_id>")) {
+      const walletId = await getUserWalletId(userId);
+      finalEndpoint = endpoint.replace("<wallet_id>", walletId);
+    }
 
     // Make the API request
     const response = await axios({
@@ -99,7 +127,24 @@ async function makePrivyRequest(endpoint, method, data = null, userId = null) {
   }
 }
 
-// Updated function to get random trivia question
+async function getWalletPolicyId(userId) {
+  try {
+    const walletId = await getUserWalletId(userId);
+    const walletData = await makePrivyRequest(`/wallets/${walletId}`, "GET");
+
+    // Check if there's at least one policy ID
+    if (walletData.policy_ids && walletData.policy_ids.length > 0) {
+      return walletData.policy_ids[0];
+    } else {
+      console.error(`No policy IDs found for wallet: ${walletId}`);
+      throw new Error("Wallet policy not found");
+    }
+  } catch (error) {
+    console.error("Error retrieving wallet policy ID:", error);
+    throw error;
+  }
+}
+
 async function getUserTrivia(userId) {
   try {
     // In a production version, we would retrieve from DynamoDB
@@ -114,7 +159,6 @@ async function getUserTrivia(userId) {
   }
 }
 
-// Bug fix for the verifyUserTrivia function to avoid reference to handlerInput
 async function verifyUserTrivia(userId, answer, currentQuestion) {
   try {
     // In a production version, we would check against answers in DynamoDB
@@ -133,7 +177,6 @@ async function verifyUserTrivia(userId, answer, currentQuestion) {
   }
 }
 
-// Helper function to get addresses from address book
 async function getAddressBook(userId) {
   try {
     const params = {
@@ -149,7 +192,6 @@ async function getAddressBook(userId) {
   }
 }
 
-// Helper function to verify contact exists in user's phone
 async function verifyContactExists(handlerInput, contactName) {
   try {
     // Check for permission to access contacts
@@ -185,96 +227,6 @@ async function verifyContactExists(handlerInput, contactName) {
   }
 }
 
-// Example: Updating addAddressToAddressBook to pass userId
-async function addAddressToAddressBook(userId, nickname, address) {
-  try {
-    // First get current address book
-    const addressBook = await getAddressBook(userId);
-
-    // Add new address
-    addressBook[nickname] = address;
-
-    // Save updated address book
-    const params = {
-      TableName: "AlexaWalletAddressBook",
-      Item: {
-        userId: userId,
-        addresses: addressBook,
-      },
-    };
-
-    await dynamoDB.put(params).promise();
-
-    // Update the policy on Privy to allow transactions to this address
-    // Pass the userId to updatePrivyPolicy
-    await updatePrivyPolicy(address, userId);
-
-    return true;
-  } catch (error) {
-    console.error("Error adding address to book:", error);
-    return false;
-  }
-}
-
-// Helper function to update Privy policy to allow transactions to an address
-async function updatePrivyPolicy(newAddress, userId) {
-  try {
-    // Get secrets for Privy authentication
-    const secrets = await getSecrets("PrivyWalletCredentials");
-    const { policyId } = secrets;
-
-    // First get the current policy
-    const currentPolicy = await makePrivyRequest(
-      `/policies/${policyId}`,
-      "GET",
-      null,
-      userId
-    );
-
-    // Extract the existing rules
-    const methodRules = currentPolicy.method_rules;
-
-    // Find the eth_sendTransaction rule
-    const sendTxRule = methodRules.find(
-      (rule) => rule.method === "eth_sendTransaction"
-    );
-
-    if (sendTxRule) {
-      // Add the new address to the rules
-      const newRule = {
-        name: `Allow ${newAddress}`,
-        conditions: [
-          {
-            field_source: "ethereum_transaction",
-            field: "to",
-            operator: "eq",
-            value: newAddress,
-          },
-        ],
-        action: "ALLOW",
-      };
-
-      sendTxRule.rules.push(newRule);
-
-      // Update the policy
-      await makePrivyRequest(
-        `/policies/${policyId}`,
-        "PATCH",
-        {
-          method_rules: methodRules,
-        },
-        userId
-      );
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Error updating policy:", error);
-    return false;
-  }
-}
-
-// Helper Functions
 function getSlotValue(handlerInput, slotName) {
   const request = handlerInput.requestEnvelope.request;
   if (
@@ -295,8 +247,7 @@ module.exports = {
   verifyUserTrivia,
   getAddressBook,
   verifyContactExists,
-  addAddressToAddressBook,
-  updatePrivyPolicy,
   getSlotValue,
+  getWalletPolicyId,
   TRIVIA_QUESTIONS,
 };
