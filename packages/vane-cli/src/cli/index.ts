@@ -347,7 +347,7 @@ async function main() {
         break;
 
       case "deploy":
-        console.log("❌ Deployment integration is not yet enabled");
+        await handleDeploy(existingConfig, existingConfig.projectName);
         break;
 
       case "exit":
