@@ -8,22 +8,21 @@ const {
   CancelAndStopIntentHandler,
   SessionEndedRequestHandler,
   ErrorHandler,
-} = require("./handlers/generalHandlers");
+} = require("./handlers/general");
 
 const {
   CheckNativeBalanceIntentHandler,
   SendTransactionIntentHandler,
   AnswerIntentHandler,
-} = require("./handlers/transactionHandlers");
+} = require("./handlers/transaction");
 
 const {
+  CreateWalletIntentHandler,
+  ShowWalletAddressIntentHandler,
   AddAddressIntentHandler,
-  ScanAddressIntentHandler,
-  CheckScanStatusIntentHandler,
-  ImportFromShortCodeIntentHandler,
-  AssociateAddressWithContactIntentHandler,
+  ShowContactAddressIntentHandler,
   PermissionsRequiredHandler,
-} = require("./handlers/addressHandlers");
+} = require("./handlers/address");
 
 // Contact permission constants
 const PERMISSIONS = [
@@ -39,11 +38,10 @@ exports.handler = Alexa.SkillBuilders.custom()
     LaunchRequestHandler,
     CheckNativeBalanceIntentHandler,
     SendTransactionIntentHandler,
+    CreateWalletIntentHandler,
+    ShowWalletAddressIntentHandler,
     AddAddressIntentHandler,
-    ScanAddressIntentHandler,
-    CheckScanStatusIntentHandler,
-    ImportFromShortCodeIntentHandler,
-    AssociateAddressWithContactIntentHandler,
+    ShowContactAddressIntentHandler,
     AnswerIntentHandler,
     PermissionsRequiredHandler,
     HelpIntentHandler,

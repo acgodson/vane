@@ -1,3 +1,4 @@
+//utils/helpers.js
 const AWS = require("aws-sdk");
 const axios = require("axios");
 
@@ -37,12 +38,33 @@ async function getSecrets(secretName) {
   }
 }
 
+async function getUserWalletId(userId) {
+  try {
+    const params = {
+      TableName: "AlexaWalletUsers",
+      Key: { userId: userId },
+    };
+
+    const result = await dynamoDB.get(params).promise();
+
+    if (result.Item && result.Item.walletId) {
+      return result.Item.walletId;
+    } else {
+      console.error(`No wallet ID found for user: ${userId}`);
+      throw new Error("User wallet not found");
+    }
+  } catch (error) {
+    console.error("Error retrieving user wallet ID:", error);
+    throw error;
+  }
+}
+
 // Helper function to make authenticated requests to Privy API
-async function makePrivyRequest(endpoint, method, data = null) {
+async function makePrivyRequest(endpoint, method, data = null, userId = null) {
   try {
     // Get secrets for Privy authentication
     const secrets = await getSecrets("PrivyWalletCredentials");
-    const { appId, appSecret, walletId } = secrets;
+    const { appId, appSecret } = secrets;
 
     // Create auth credentials for Basic Auth
     const auth = {
@@ -50,8 +72,10 @@ async function makePrivyRequest(endpoint, method, data = null) {
       password: appSecret,
     };
 
-    // Replace any instances of walletId placeholder in the endpoint
-    const finalEndpoint = endpoint.replace("<wallet_id>", walletId);
+    let finalEndpoint = endpoint;
+
+    const walletId = await getUserWalletId(userId);
+    finalEndpoint = endpoint.replace("<wallet_id>", walletId);
 
     // Make the API request
     const response = await axios({
@@ -161,7 +185,7 @@ async function verifyContactExists(handlerInput, contactName) {
   }
 }
 
-// Helper function to add address to address book
+// Example: Updating addAddressToAddressBook to pass userId
 async function addAddressToAddressBook(userId, nickname, address) {
   try {
     // First get current address book
@@ -182,7 +206,8 @@ async function addAddressToAddressBook(userId, nickname, address) {
     await dynamoDB.put(params).promise();
 
     // Update the policy on Privy to allow transactions to this address
-    await updatePrivyPolicy(address);
+    // Pass the userId to updatePrivyPolicy
+    await updatePrivyPolicy(address, userId);
 
     return true;
   } catch (error) {
@@ -192,7 +217,7 @@ async function addAddressToAddressBook(userId, nickname, address) {
 }
 
 // Helper function to update Privy policy to allow transactions to an address
-async function updatePrivyPolicy(newAddress) {
+async function updatePrivyPolicy(newAddress, userId) {
   try {
     // Get secrets for Privy authentication
     const secrets = await getSecrets("PrivyWalletCredentials");
@@ -201,7 +226,9 @@ async function updatePrivyPolicy(newAddress) {
     // First get the current policy
     const currentPolicy = await makePrivyRequest(
       `/policies/${policyId}`,
-      "GET"
+      "GET",
+      null,
+      userId
     );
 
     // Extract the existing rules
@@ -230,9 +257,14 @@ async function updatePrivyPolicy(newAddress) {
       sendTxRule.rules.push(newRule);
 
       // Update the policy
-      await makePrivyRequest(`/policies/${policyId}`, "PATCH", {
-        method_rules: methodRules,
-      });
+      await makePrivyRequest(
+        `/policies/${policyId}`,
+        "PATCH",
+        {
+          method_rules: methodRules,
+        },
+        userId
+      );
     }
 
     return true;
@@ -257,6 +289,7 @@ function getSlotValue(handlerInput, slotName) {
 
 module.exports = {
   getSecrets,
+  getUserWalletId,
   makePrivyRequest,
   getUserTrivia,
   verifyUserTrivia,

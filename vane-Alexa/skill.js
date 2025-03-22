@@ -5,7 +5,10 @@ const AWS = require("aws-sdk");
 
 // AWS services setup
 const secretsManager = new AWS.SecretsManager();
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const dynamoDB = new AWS.DynamoDB.DocumentClient({
+  region: 'us-east-1',
+  endpoint: 'https://dynamodb.us-east-1.amazonaws.com',
+});
 
 // Contact permission constants
 const PERMISSIONS = [
