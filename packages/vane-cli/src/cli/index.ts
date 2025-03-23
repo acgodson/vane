@@ -1,14 +1,18 @@
 // src/cli/index.js
-import { buildProject } from "./build";
-import inquirer from "inquirer";
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from "fs";
 import { join, resolve } from "path";
 import dotenv from "dotenv";
-import { generateFiles } from "../generators";
+import inquirer from "inquirer";
 import ora from "ora";
+import { buildProject } from "./build";
 import createCLIIntegration from "./integration";
 import { buildProjectFiles, installDependencies } from "./utils";
 import { handleDeploy } from "./deploy";
+import { generateFiles } from "../generators";
+import {
+  createWebSocketServer,
+  createMirroredConsole,
+} from "../websocket/server";
 
 dotenv.config();
 
@@ -180,6 +184,64 @@ You're working on project: ${config.projectName}
   // Initialize CLI integration
   const cliIntegration = createCLIIntegration(config);
 
+  // Ask if the user wants to enable browser interface
+  const { enableBrowser } = await inquirer.prompt([
+    {
+      type: "confirm",
+      name: "enableBrowser",
+      message:
+        "Would you like to enable browser interface for this chat session?",
+      default: true,
+    },
+  ]);
+
+  // WebSocket server reference
+  let wsServer: any = null;
+
+  if (enableBrowser) {
+    // Ask for port
+    const { port } = await inquirer.prompt([
+      {
+        type: "number",
+        name: "port",
+        message: "Enter port for browser interface:",
+        default: 8080,
+        validate: (value) => {
+          const port = parseInt(value);
+          if (isNaN(port) || port < 1024 || port > 65535) {
+            return "Please enter a valid port number (1024-65535)";
+          }
+          return true;
+        },
+      },
+    ]);
+
+    // Create a wrapper for CLI message processing
+    const processMessage = async (message: string): Promise<string> => {
+      try {
+        // Process using the real CLI integration
+        return await cliIntegration.processMessage(message);
+      } catch (error: any) {
+        return `Error: ${error.message}`;
+      }
+    };
+
+    // Start WebSocket server
+    wsServer = createWebSocketServer(processMessage, port, config);
+
+    // Replace console with mirrored version
+    Object.assign(console, createMirroredConsole(wsServer));
+
+    console.log(`
+    🔗 Browser interface is now available
+    
+    To use the browser interface:
+    1. Open the Vane browser interface in your web browser
+    2. Connect to ws://localhost:${port}
+    3. Chat from either the browser or this terminal
+    `);
+  }
+
   // Save function - only saves to local config during development
   const saveConversation = async () => {
     // Update memory with current conversation from CLI integration
@@ -208,6 +270,12 @@ You're working on project: ${config.projectName}
       const spinner = ora("Saving conversation before exit...").start();
       await saveConversation();
       spinner.succeed("Conversation saved");
+
+      if (wsServer) {
+        wsServer.close();
+        console.log("WebSocket server closed");
+      }
+
       chatting = false;
       continue;
     }

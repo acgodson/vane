@@ -139,41 +139,16 @@ export async function deployToAlexaSkill(projectPath, inputOptions = {}) {
       }
     );
 
-    // 3. Generate example handler
+    // 3. Generate default handler
     const handlerPath = join(handlersPath, `${options.agentName}Handler.js`);
     await withSpinner(
-      `Creating example handler at ${handlerPath}...`,
+      `Creating default handler at ${handlerPath}...`,
       async () => {
         const handlerContent = generateExampleHandler(options.agentName);
         writeFileSync(handlerPath, handlerContent);
         return true;
       }
     );
-
-    // 4. Generate interaction model snippet
-    const intentName = options.agentName.includes("-")
-      ? capitalizeFirstLetter(options.agentName.replace(/-/g, ""))
-      : capitalizeFirstLetter(options.agentName);
-
-      const interactionModelSnippet = `
-      {
-        "name": "${intentName}Intent",
-        "slots": [
-          {
-            "name": "query",
-            "type": "AMAZON.SearchQuery"
-          }
-        ],
-        "samples": [
-          "lookup {query}",
-          "look up {query}",
-          "find information about {query}",
-          "get details on {query}"
-        ]
-      }`;
-
-    // 5. Generate index.js import snippet
-    const handlerName = intentName + "IntentHandler";
 
     console.log(`
 ✅ Deployment completed successfully!
@@ -184,22 +159,9 @@ An example handler has been created at: ${handlerPath}
 
 To use your agent in your Alexa skill:
 
-1. Add the following to your index.js:
+1. Commit and Git push changes to your Alexa Hosting  your Alexa skill
 
-const ${handlerName} = require('./handlers/${options.agentName}Handler');
-
-// Add to your skill builder
-const skillBuilder = Alexa.SkillBuilders.custom()
-  .addRequestHandlers(
-    // ... your existing handlers
-    ${handlerName}
-  )
-  .lambda();
-
-2. Add this intent to your interaction model:
-${interactionModelSnippet}
-
-3. Build and deploy your Alexa skill
+2. Use [agent Query] or default VaneAgentHandler intents in your interaction model:
 `);
 
     return {
@@ -418,60 +380,87 @@ function generateExampleHandler(agentName) {
   const handlerName = intentName + "IntentHandler";
 
   return `// Auto-generated handler for ${agentName}
-  const Alexa = require('ask-sdk-core');
-  const { queryAgent } = require('../utils/${agentName}');
-  
-  /**
-   * Handler for ${intentName} queries
-   */
-  const ${handlerName} = {
-    canHandle(handlerInput) {
-      return (
-        Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
-        Alexa.getIntentName(handlerInput.requestEnvelope) === '${intentName}Intent'
-      );
-    },
-    async handle(handlerInput) {
-      // Get the user's query from the slot
-      const query = Alexa.getSlotValue(handlerInput.requestEnvelope, 'query') || 
-                    'What is the current price of Ethereum?';
+// This file will be replaced during agent deployment
+
+require("dotenv").config();
+
+const Alexa = require('ask-sdk-core');
+const { queryAgent } = require('../utils/${agentName}');
+
+/**
+ * Handler for ${intentName} queries through the "lookup" command
+ */
+const ${handlerName} = {
+  canHandle(handlerInput) {
+    console.log("Checking if ${handlerName} can handle the request...");
+    const canHandle =
+      Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+      Alexa.getIntentName(handlerInput.requestEnvelope) === '${intentName}Intent';
+    console.log(\`Can handle: \${canHandle}\`);
+    return canHandle;
+  },
+  async handle(handlerInput) {
+    try {
+      const querySlot = handlerInput.requestEnvelope.request.intent.slots.query;
+      const query = querySlot ? querySlot.value : null;
+      console.log("Query slot:", querySlot);
+      console.log("Query value:", query);
       
-      try {
-        console.log('${handlerName} received query:', query);
-        
-        // Query the agent
-        const response = await queryAgent(query, {
-          // You can add options here as needed
-          userId: handlerInput.requestEnvelope.session.user.userId
-        });
-        
-        console.log('Agent response:', response);
-        
-        // Format response for better Alexa speech
-        let formattedResponse = response;
-        
-        // Convert LaTeX-style math notation to plain text for better speech
-        formattedResponse = formattedResponse.replace(/\\\\?\\(([^)]+)\\\\?\\)/g, '$1');
-        formattedResponse = formattedResponse.replace(/\\\\times/g, 'times');
-        formattedResponse = formattedResponse.replace(/\\\\div/g, 'divided by');
-        formattedResponse = formattedResponse.replace(/\\\\sqrt/g, 'square root of');
-        
+      if (!query) {
+        console.log("No query value detected");
         return handlerInput.responseBuilder
-          .speak(formattedResponse)
-          .reprompt('Is there anything else you would like to lookup?')
-          .getResponse();
-      } catch (error) {
-        console.error('Error in ${handlerName}:', error);
-        
-        return handlerInput.responseBuilder
-          .speak('I had trouble looking up that information right now. Please try again later.')
+          .speak("What would you like to look up?")
+          .reprompt("Please tell me what to look up.")
+          .addElicitSlotDirective("query")
           .getResponse();
       }
+
+      console.log("About to call queryAgent with:", query);
+      let response;
+      try {
+        response = await queryAgent(query, {
+          userId: handlerInput.requestEnvelope.session.user.userId,
+        });
+        console.log("Raw response from queryAgent:", response);
+      } catch (queryError) {
+        console.error("Error calling queryAgent:", queryError);
+        response = "I encountered an error processing your request.";
+      }
+
+      // Check if response is undefined or empty
+      if (!response) {
+        console.log("Response is empty or undefined, using fallback message");
+        response =
+          "I'm sorry, but I couldn't get a proper response at this time.";
+      }
+
+      // Format response for better Alexa speech
+      let formattedResponse = response;
+      
+      // Convert LaTeX-style math notation to plain text for better speech
+      formattedResponse = formattedResponse.replace(/\\\\?\\(([^)]+)\\\\?\\)/g, '$1');
+      formattedResponse = formattedResponse.replace(/\\\\times/g, 'times');
+      formattedResponse = formattedResponse.replace(/\\\\div/g, 'divided by');
+      formattedResponse = formattedResponse.replace(/\\\\sqrt/g, 'square root of');
+
+      console.log("Final response to be sent:", formattedResponse);
+      return handlerInput.responseBuilder
+        .speak(formattedResponse)
+        .reprompt("Is there anything else you would like to look up?")
+        .getResponse();
+    } catch (error) {
+      console.error("Unhandled error in ${handlerName}:", error);
+      return handlerInput.responseBuilder
+        .speak(
+          "I had trouble looking up that information right now. Please try again later."
+        )
+        .getResponse();
     }
-  };
-  
-  module.exports = ${handlerName};
-  `;
+  }
+};
+
+module.exports = { ${handlerName} };
+`;
 }
 
 /**

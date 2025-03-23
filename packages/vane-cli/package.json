@@ -1,6 +1,6 @@
 {
   "name": "vane-tool-kit",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Vane DSLfor creating AI agents conversationally on CLI",
   "main": "dist/index.js",
   "type": "commonjs",

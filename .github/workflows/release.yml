@@ -1,0 +1,82 @@
+name: Publish vane-cli
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/vane-cli/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/vane-cli/**"
+    types: [opened, synchronize]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@${{ github.repository_owner }}"
+
+      # Install dependencies (monorepo-aware)
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build vane-cli
+      - name: Build vane-cli
+        working-directory: ./packages/vane-cli
+        run: pnpm build
+
+      # Ensure package.json is correctly scoped for GitHub Packages
+      - name: Configure package.json for GitHub Packages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: ./packages/vane-cli
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          PKG_NAME=$(node -p "require('./package.json').name.replace(/^@[^\/]+\//, '')")
+
+          # Ensure package name is scoped
+          if ! grep -q "\"name\": \"@${OWNER}/" package.json; then
+            echo "Updating package name to include scope"
+            sed -i "s/\"name\": \".*\"/\"name\": \"@${OWNER}\/${PKG_NAME}\"/" package.json
+          fi
+
+          # Ensure publishConfig is set
+          if ! grep -q "\"publishConfig\":" package.json; then
+            echo "Adding publishConfig to package.json"
+            node -e "const pkg = require('./package.json'); pkg.publishConfig = { registry: 'https://npm.pkg.github.com' }; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          fi
+
+          # Ensure .npmrc is correctly configured
+          echo "@${OWNER}:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=\${NODE_AUTH_TOKEN}" >> .npmrc
+
+          echo "Updated package.json and created .npmrc"
+          cat package.json
+          echo "----------"
+          cat .npmrc
+
+      # Publish package on every push to main
+      - name: Publish vane-cli
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: ./packages/vane-cli
+        run: pnpm publish --no-git-checks --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
