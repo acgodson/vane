@@ -18,7 +18,7 @@ const PERMISSIONS = [
 
 // Function to generate appropriate card URL
 function generateCardUrl(action, userId, params = {}) {
-  const baseUrl = "https://vanewallet.vercel.app";
+  const baseUrl = "https://vane-editor.vercel.app/contact.html";
 
   switch (action) {
     case "create":
@@ -228,7 +228,7 @@ const AddAddressIntentHandler = {
 
       // Check if user has a wallet
       try {
-        const walletId = await getUserWalletId(userId);
+        const walletId = await getUserWalletId(handlerInput);
 
         // Generate URL with needed parameters
         const contactParam = nickname ? nickname : "";

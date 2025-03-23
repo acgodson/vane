@@ -1,21 +1,28 @@
 {
   "name": "@acgodson/vane-wallet",
-  "version": "0.0.1",
+  "version": "1.2.0",
   "description": "Alexa skill for Vane Wallet with Privy.io integration",
   "main": "index.js",
   "scripts": {
+    "reset-agent": "node ./utils/reset-agent.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+    
   },
   "author": "@Acgodon",
   "license": "MIT",
   "dependencies": {
     "@covalenthq/ai-agent-sdk": "^0.3.0",
+    "abort-controller": "3.0.0",
     "ask-sdk-core": "^2.7.0",
     "ask-sdk-dynamodb-persistence-adapter": "^2.14.0",
     "ask-sdk-model": "^1.19.0",
     "aws-sdk": "^2.326.0",
     "axios": "^1.6.0",
     "dotenv": "^16.0.3",
+    "node-fetch": "^2.6.7",
+    "structured-clone": "0.2.2",
+    "viem": "^2.23.14",
+    "web-streams-polyfill": "^3.2.1",
     "zod": "^3.24.2"
   }
 }

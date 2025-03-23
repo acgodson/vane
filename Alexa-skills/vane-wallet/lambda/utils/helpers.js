@@ -10,10 +10,9 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient({
   region: process.env.DYNAMODB_PERSISTENCE_REGION,
 });
 
-// Base URLs
 const PRIVY_API_URL = "https://api.privy.io/v1";
 
-// Hard-coded trivia questions (for simplicity in the demo version)
+// Hard-coded trivia questions. NOT FOR PRODUCTION USE
 const TRIVIA_QUESTIONS = [
   {
     question: "What was the name of your first pet?",
@@ -28,26 +27,6 @@ const TRIVIA_QUESTIONS = [
     answer: "buddy",
   },
 ];
-
-async function getSecrets(secretName) {
-  console.log(
-    `Loading privy secrets for ${secretName} from local environment variables`
-  );
-  const secretMappings = {
-    PrivyWalletCredentials: {
-      appId: process.env.PRIVY_APP_ID,
-      appSecret: process.env.PRIVY_APP_SECRET,
-    },
-  };
-  // Return the mapped secrets if they exist
-  if (secretMappings[secretName]) {
-    return secretMappings[secretName];
-  } else {
-    throw new Error(
-      `Secret mapping for ${secretName} not found in local environment`
-    );
-  }
-}
 
 async function getUserWalletId(handlerInput) {
   try {
@@ -111,11 +90,6 @@ async function makePrivyRequest(
   }
 }
 
-/**
- * Creates a default wallet policy that blocks value transfers
- * @param {string} userId - The user ID to include in the policy name
- * @returns {Promise<string>} - The ID of the created policy
- */
 async function createDefaultWalletPolicy(userId) {
   try {
     const policyResponse = await makePrivyRequest("/policies", "POST", {
@@ -250,6 +224,26 @@ async function getWalletPolicyId(handlerInput) {
   } catch (error) {
     console.error("Error retrieving wallet policy ID:", error);
     throw error;
+  }
+}
+
+async function getSecrets(secretName) {
+  console.log(
+    `Loading privy secrets for ${secretName} from local environment variables`
+  );
+  const secretMappings = {
+    PrivyWalletCredentials: {
+      appId: process.env.PRIVY_APP_ID,
+      appSecret: process.env.PRIVY_APP_SECRET,
+    },
+  };
+  // Return the mapped secrets if they exist
+  if (secretMappings[secretName]) {
+    return secretMappings[secretName];
+  } else {
+    throw new Error(
+      `Secret mapping for ${secretName} not found in local environment`
+    );
   }
 }
 

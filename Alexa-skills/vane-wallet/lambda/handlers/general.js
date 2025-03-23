@@ -1,4 +1,3 @@
-//  handles/general.js
 const Alexa = require("ask-sdk-core");
 
 // Launch Request Handler

@@ -139,10 +139,10 @@
             }
           ],
           "samples": [
-            "lookup {query}",
-            "look up {query}",
-            "find information about {query}",
-            "get details on {query}"
+            "agent query {query}",
+            "agent query about {query}",
+            "agent query information on {query}",
+            "agent query details about {query}"
           ]
         }
       ],
@@ -220,6 +220,22 @@
               "prompts": {}
             }
           ]
+        },
+        {
+          "name": "VaneagentIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.VaneagentIntent.query"
+              }
+            }
+          ]
         }
       ],
       "delegationStrategy": "SKILL_RESPONSE"
@@ -274,6 +290,19 @@
           {
             "type": "PlainText",
             "value": "Please provide a name for this contact."
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.VaneagentIntent.query",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What would you like to look up?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Please tell me what information you're looking for."
           }
         ]
       }
