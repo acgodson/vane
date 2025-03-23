@@ -1,5 +1,5 @@
 // Auto-generated index file for vaneagent
-// Generated on 2025-03-23T07:54:11.887Z
+// Generated on 2025-03-23T09:44:52.244Z
 
 import AgentKit from "./core/agent-kit.js";
 
