@@ -552,138 +552,97 @@
         let socket = null;
         let isConnecting = false;
 
-        // Enhanced JSON message parsing function to handle all formats
+        // Enhanced JSON message parsing function
         function parseAssistantMessage(messageContent) {
-          console.log("Original message:", messageContent);
+          console.log("Parsing message:", messageContent);
 
+          // Handle null/undefined inputs
+          if (!messageContent) return "";
+
+          // If input is already an object (not a string)
+          if (typeof messageContent !== "string") {
+            // Handle object with value property
+            if (messageContent.value)
+              return parseAssistantMessage(messageContent.value);
+            // Handle object with content property and type=assistant
+            if (messageContent.type === "assistant" && messageContent.content)
+              return messageContent.content;
+            // Otherwise stringify for display
+            return JSON.stringify(messageContent, null, 2);
+          }
+
+          // Try to parse if it's a JSON string
           try {
-            // Case 1: Message is already an object with value property
-            if (typeof messageContent === "object" && messageContent !== null) {
-              if (messageContent.value) {
-                return messageContent.value;
-              }
-              // For objects that don't have a value property but have a type
-              if (
-                messageContent.type === "assistant" &&
-                messageContent.content
-              ) {
-                return messageContent.content;
-              }
-              // Return the object as is if it doesn't match known patterns
-              return messageContent;
+            // Check if it looks like JSON
+            if (
+              messageContent.trim().startsWith("{") &&
+              messageContent.trim().endsWith("}")
+            ) {
+              const parsed = JSON.parse(messageContent);
+
+              // Handle parsed object with value or content
+              if (parsed.value) return parseAssistantMessage(parsed.value);
+              if (parsed.type === "assistant" && parsed.content)
+                return parsed.content;
+
+              // Return the parsed object if no special handling needed
+              return parsed;
             }
 
-            // Case 2: Message is a string containing JSON
-            if (typeof messageContent === "string") {
-              // Check if it looks like JSON
-              let trimmed = messageContent.trim();
-              if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-                try {
-                  // Try standard JSON parsing first
-                  const jsonObj = JSON.parse(trimmed);
-                  if (jsonObj.value) {
-                    return jsonObj.value;
-                  }
-                  if (jsonObj.type === "assistant" && jsonObj.content) {
-                    return jsonObj.content;
-                  }
-                  return jsonObj; // Return the whole object if no value property
-                } catch (jsonError) {
-                  console.log(
-                    "Regular JSON parsing failed, trying regex extraction:",
-                    jsonError
-                  );
+            // Not JSON-like, return as is
+            return messageContent;
+          } catch (error) {
+            console.log("JSON parse failed, trying regex extraction:", error);
 
-                  // -- Double quotes extraction patterns --
+            // Try various regex patterns to extract content
 
-                  // Handle escaped quotes and newlines with double quotes
-                  const valueMatchDouble = trimmed.match(
-                    /"value"\s*:\s*"((?:\\.|[^"\\])*)"}/
-                  );
-                  if (valueMatchDouble && valueMatchDouble[1]) {
-                    try {
-                      return JSON.parse('"' + valueMatchDouble[1] + '"');
-                    } catch (e) {
-                      console.log(
-                        "Failed to parse extracted double-quoted value:",
-                        e
-                      );
-                      return valueMatchDouble[1]; // Return raw extracted value as fallback
-                    }
-                  }
-
-                  // Simple pattern with double quotes (no escaping)
-                  const simpleMatchDouble = trimmed.match(/"value":"([^"]*)"}/);
-                  if (simpleMatchDouble && simpleMatchDouble[1]) {
-                    return simpleMatchDouble[1];
-                  }
-
-                  // -- Single quotes extraction patterns --
-
-                  // Handle value with single quotes {'type':'assistant','value':'text'}
-                  const valueMatchSingle = trimmed.match(
-                    /'value'\s*:\s*'((?:\\.|[^'\\])*)'}/
-                  );
-                  if (valueMatchSingle && valueMatchSingle[1]) {
-                    return valueMatchSingle[1].replace(/\\'/g, "'");
-                  }
-
-                  // Simple pattern with single quotes
-                  const simpleMatchSingle = trimmed.match(/'value':'([^']*)'}/);
-                  if (simpleMatchSingle && simpleMatchSingle[1]) {
-                    return simpleMatchSingle[1];
-                  }
-
-                  // -- Mixed quotes extraction patterns --
-
-                  // Handle mixed quotes: {"type":"assistant",'value':'text'}
-                  const mixedMatch1 = trimmed.match(
-                    /"value"\s*:\s*'((?:\\.|[^'\\])*)'}/
-                  );
-                  if (mixedMatch1 && mixedMatch1[1]) {
-                    return mixedMatch1[1].replace(/\\'/g, "'");
-                  }
-
-                  // Handle reversed mixed quotes: {'type':'assistant',"value":"text"}
-                  const mixedMatch2 = trimmed.match(
-                    /'value'\s*:\s*"((?:\\.|[^"\\])*)"}/
-                  );
-                  if (mixedMatch2 && mixedMatch2[1]) {
-                    try {
-                      return JSON.parse('"' + mixedMatch2[1] + '"');
-                    } catch (e) {
-                      return mixedMatch2[1];
-                    }
-                  }
-
-                  // -- Partial JSON extraction as last resort --
-                  // If we couldn't extract with regex, try to at least show the original message
-                  // This handles malformed JSON that might still be readable to the user
+            // Deep nested JSON with multiple escaping layers
+            const nestedJsonPattern =
+              /\\*"value\\*":\\*"((?:\\\\.|[^"\\\\])*?)\\*"/;
+            const nestedMatch = messageContent.match(nestedJsonPattern);
+            if (nestedMatch && nestedMatch[1]) {
+              try {
+                // Handle multiple levels of escaping
+                let extracted = nestedMatch[1];
+                // Try to unescape multiple times if necessary
+                while (
+                  extracted.includes("\\\\") ||
+                  extracted.includes('\\"')
+                ) {
+                  extracted = JSON.parse(`"${extracted}"`);
                   if (
-                    trimmed.includes('"value"') ||
-                    trimmed.includes("'value'")
-                  ) {
-                    // Remove the outer JSON structure but preserve the message content
-                    return trimmed
-                      .replace(/^{.*?"value"\s*:\s*"|'}$/g, "")
-                      .replace(/"}$/g, "");
-                  }
+                    !extracted.includes("\\") &&
+                    !extracted.includes('"value"')
+                  )
+                    break;
                 }
+                return extracted;
+              } catch (e) {
+                console.log("Failed to unescape nested content:", e);
               }
-
-              // If it's a string but not JSON, return as is
-              return messageContent;
             }
 
-            // Return original content if all parsing attempts fail
-            return messageContent || "";
-          } catch (e) {
-            console.error("Error in message parsing:", e);
-            // Return original content on any error, or empty string if null/undefined
-            return messageContent || "";
+            // Simple value extraction pattern
+            const simpleValuePattern = /"value"\s*:\s*"([^"]*)"/;
+            const simpleMatch = messageContent.match(simpleValuePattern);
+            if (simpleMatch && simpleMatch[1]) {
+              return simpleMatch[1];
+            }
+
+            // Last resort: strip all JSON-like wrapping
+            if (
+              messageContent.includes('"value"') ||
+              messageContent.includes('"content"')
+            ) {
+              return messageContent
+                .replace(/^.*?"(?:value|content)"\s*:\s*"/, "")
+                .replace(/".*?$/, "");
+            }
+
+            // If all extraction attempts fail, return original
+            return messageContent;
           }
         }
-
         // Update UI based on connection status
         function updateConnectionUI(status) {
           connectionStatus.textContent = status;
@@ -918,30 +877,44 @@
           const contentDiv = document.createElement("div");
           contentDiv.className = "message-content";
 
-          // Use marked to render markdown in the content
           try {
             // If content is not a string, stringify it
             if (typeof content !== "string") {
               content = JSON.stringify(content, null, 2);
             }
 
-            // Process backtick code blocks - Replace ` with ```
-            content = content.replace(
-              /`(javascript|python|json|html|css)\n([\s\S]*?)\n`/g,
-              "```$1\n$2\n```"
-            );
+            // Special handling for code blocks in the content
+            const codeBlockRegex = /```([a-z]*)([\s\S]*?)```/g;
+            let lastIndex = 0;
+            let match;
+            let processedContent = "";
 
-            // Process inline code with language
-            content = content.replace(/`([\s\S]*?)`/g, "```\n$1\n```");
+            // Process code blocks
+            while ((match = codeBlockRegex.exec(content)) !== null) {
+              // Add text before the code block
+              processedContent += content.substring(lastIndex, match.index);
 
-            // Process numbered lists with quotes that might be causing issues
-            content = content.replace(/(\d+\.\s+")(.*?)(")/g, "$1$2$3");
+              const language = match[1].trim();
+              const code = match[2].trim();
 
-            // Fix potential markdown rendering issues with backticks
-            contentDiv.innerHTML = marked.parse(content);
+              // Create proper code block with language
+              if (language) {
+                processedContent += `\`\`\`${language}\n${code}\n\`\`\``;
+              } else {
+                processedContent += `\`\`\`\n${code}\n\`\`\``;
+              }
+
+              lastIndex = match.index + match[0].length;
+            }
+
+            // Add remaining text after the last code block
+            processedContent += content.substring(lastIndex);
+
+            // Render the content as markdown
+            contentDiv.innerHTML = marked.parse(processedContent);
           } catch (e) {
             console.error("Markdown parsing error:", e);
-            // If markdown parsing fails, fallback to plain text
+            // Fallback to plain text
             contentDiv.textContent = content;
           }
 
@@ -953,15 +926,6 @@
           messageDiv.querySelectorAll("pre code").forEach((block) => {
             hljs.highlightElement(block);
           });
-
-          scrollToBottom(messagesContainer);
-        }
-
-        function addSystemMessage(content) {
-          const messageDiv = document.createElement("div");
-          messageDiv.className = "message system-message";
-          messageDiv.textContent = content;
-          messagesContainer.appendChild(messageDiv);
 
           scrollToBottom(messagesContainer);
         }
