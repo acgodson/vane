@@ -39,9 +39,12 @@ module.exports = {
     );
     console.log("✓ Reset utils/vane-agent.js wrapper");
 
-    // Reset the handlers/vane-agentHandler.js
+    // Reset the handlers/vane-agentHandler.js with the updated version
     const handlerContent = `// Default placeholder for Vane agent handler
 // This file will be replaced during agent deployment
+
+require("dotenv").config();
+
 const Alexa = require("ask-sdk-core");
 const { queryAgent } = require("../utils/vane-agent");
 
@@ -50,41 +53,56 @@ const { queryAgent } = require("../utils/vane-agent");
  */
 const VaneagentIntentHandler = {
   canHandle(handlerInput) {
-    return (
+    console.log("Checking if VaneagentIntentHandler can handle the request...");
+    const canHandle =
       Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
-      Alexa.getIntentName(handlerInput.requestEnvelope) === "VaneagentIntent"
-    );
+      Alexa.getIntentName(handlerInput.requestEnvelope) === "VaneagentIntent";
+    console.log(\`Can handle: \${canHandle}\`);
+    return canHandle;
   },
   async handle(handlerInput) {
-    // Get the user's query from the slot
-    const query = Alexa.getSlotValue(handlerInput.requestEnvelope, "query");
-
-    if (!query) {
-      return handlerInput.responseBuilder
-        .speak(
-          "I didn't catch what you wanted to look up. Could you try again?"
-        )
-        .reprompt("What would you like to look up?")
-        .getResponse();
-    }
-
     try {
-      console.log("VaneagentIntentHandler received query:", query);
+      const querySlot = handlerInput.requestEnvelope.request.intent.slots.query;
+      const query = querySlot ? querySlot.value : null;
+      console.log("Query slot:", querySlot);
+      console.log("Query value:", query);
+      if (!query) {
+        console.log("No query value detected");
+        return handlerInput.responseBuilder
+          .speak("What would you like to look up?")
+          .reprompt("Please tell me what to look up.")
+          .addElicitSlotDirective("query")
+          .getResponse();
+      }
 
-      // Query the agent
-      const response = await queryAgent(query, {
-        userId: handlerInput.requestEnvelope.session.user.userId,
-      });
+      console.log("About to call queryAgent with:", query);
+      let response;
+      try {
+        response = "Not available at the moment";
 
-      console.log("Agent response:", response);
+        await queryAgent(query, {
+          userId: handlerInput.requestEnvelope.session.user.userId,
+        });
+        console.log("Raw response from queryAgent:", response);
+      } catch (queryError) {
+        console.error("Error calling queryAgent:", queryError);
+        response = "I encountered an error processing your request.";
+      }
 
+      // Check if response is undefined or empty
+      if (!response) {
+        console.log("Response is empty or undefined, using fallback message");
+        response =
+          "I'm sorry, but I couldn't get a proper response at this time.";
+      }
+
+      console.log("Final response to be sent:", response);
       return handlerInput.responseBuilder
         .speak(response)
         .reprompt("Is there anything else you would like to look up?")
         .getResponse();
     } catch (error) {
-      console.error("Error in VaneagentIntentHandler:", error);
-
+      console.error("Unhandled error in VaneagentIntentHandler:", error);
       return handlerInput.responseBuilder
         .speak(
           "I had trouble looking up that information right now. Please try again later."
@@ -94,7 +112,7 @@ const VaneagentIntentHandler = {
   },
 };
 
-module.exports = VaneagentIntentHandler;`;
+module.exports = { VaneagentIntentHandler };`;
 
     fs.writeFileSync(
       path.join(rootDir, "handlers", "vane-agentHandler.js"),
