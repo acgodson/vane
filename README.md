@@ -25,31 +25,42 @@ Vane Wallet, a **voice-controlled Ethereum wallet**, showcases the power of Vane
 
 ## 📦 Installation
 
-You can install the Vane CLI toolkit from GitHub Packages:
+### Option 1: Install from GitHub Packages
 
 ```bash
-# For users with GitHub Package access
-npm install @acgodson/vane-tool-kit
+# Create or edit .npmrc with your GitHub access token
+echo "@acgodson:registry=https://npm.pkg.github.com" >> ~/.npmrc
+echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> ~/.npmrc
+
+# Then install globally
+npm install -g @acgodson/vane-tool-kit
 ```
 
-Or install globally:
+### Option 2: Local Development Setup
 
 ```bash
-npm install -g @acgodson/vane-tool-kit
+# Clone the repository
+git clone https://github.com/acgodson/vane.git
+cd vane/packages/vane-cli
+
+# Run the setup script
+npm run setup
+
+# Navigate to the dist directory and start
+npm run start
 ```
 
 ## 📖 Getting Started
 
-1️⃣ Install Vane CLI
-
-```bash
-npm install -g @acgodson/vane-tool-kit
-```
-
-2️⃣ Create an AI Agent Project
+1️⃣ Create an AI Agent Project
 
 ```bash
 vanekit
+```
+
+2️⃣ Navigate to your project and start a conversation
+
+```bash
 cd <project-name> && vanekit chat
 ```
 
