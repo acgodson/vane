@@ -35,8 +35,13 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@${{ github.repository_owner }}"
 
-      # Install dependencies (monorepo-aware)
+      # Debugging: Check if package.json exists
+      - name: Verify package.json location
+        run: ls -l packages/vane-cli
+
+      # Install dependencies explicitly in vane-cli
       - name: Install dependencies
+        working-directory: ./packages/vane-cli
         run: pnpm install --frozen-lockfile
 
       # Build vane-cli
