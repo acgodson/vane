@@ -42,7 +42,7 @@ jobs:
       # Install dependencies explicitly in vane-cli
       - name: Install dependencies
         working-directory: ./packages/vane-cli
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       # Build vane-cli
       - name: Build vane-cli
