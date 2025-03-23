@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vane Chat Interface</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <style>
+      :root {
+        --primary-color: #104168;
+        --secondary-color: #f5f5f5;
+        --text-color: #333;
+        --border-color: #ddd;
+        --user-msg-bg: #e1f5fe;
+        --assistant-msg-bg: #f1f8e9;
+        --system-msg-bg: #fff3e0;
+        --console-bg: #1a2633;
+        --console-text: #b0bec5;
+        --suggestion-bg: rgba(16, 65, 104, 0.1);
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        color: var(--text-color);
+        background-color: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      .top-bar {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .logo {
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .connection-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .connection-status {
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        min-width: 100px;
+        text-align: center;
+      }
+
+      .connected {
+        background-color: #43a047;
+        color: white;
+      }
+
+      .disconnected {
+        background-color: #e53935;
+        color: white;
+      }
+
+      .connecting {
+        background-color: #fb8c00;
+        color: white;
+      }
+
+      .port-input {
+        padding: 5px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        width: 80px;
+      }
+
+      .connect-button {
+        background-color: white;
+        color: var(--primary-color);
+        border: 1px solid white;
+        border-radius: 4px;
+        padding: 5px 15px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .chat-container {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--border-color);
+        position: relative;
+      }
+
+      .chat-bg-pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #f8f9fa;
+        background-image: linear-gradient(
+            rgba(220, 220, 220, 0.1) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(220, 220, 220, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        z-index: 0;
+      }
+
+      .console-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--console-bg);
+        color: var(--console-text);
+        font-family: "Courier New", monospace;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .console-pattern {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 40px;
+        background: repeating-linear-gradient(
+          45deg,
+          rgba(255, 255, 255, 0.03),
+          rgba(255, 255, 255, 0.03) 5px,
+          rgba(255, 255, 255, 0.06) 5px,
+          rgba(255, 255, 255, 0.06) 10px
+        );
+        z-index: 1;
+      }
+
+      .header {
+        background-color: #f0f0f0;
+        color: var(--text-color);
+        padding: 10px 15px;
+        font-weight: bold;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 2;
+      }
+
+      .console-header {
+        background-color: #1c2e3e;
+        color: #fff;
+        z-index: 2;
+      }
+
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 1;
+      }
+
+      .console-output {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        position: relative;
+        z-index: 2;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .console-line {
+        padding: 0px 0;
+        line-height: 1.5;
+        margin: 0;
+        display: flex;
+      }
+
+      .console-prefix {
+        color: #6c7a89;
+        margin-right: 6px;
+        flex-shrink: 0;
+      }
+
+      .console-content {
+        flex: 1;
+      }
+
+      .input-container {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid var(--border-color);
+        background-color: white;
+        position: relative;
+        z-index: 2;
+      }
+
+      .message-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        margin-right: 10px;
+      }
+
+      .send-button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0 20px;
+        cursor: pointer;
+      }
+
+      .message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        max-width: 80%;
+        word-wrap: break-word;
+        position: relative;
+      }
+
+      .user-message {
+        background-color: var(--user-msg-bg);
+        align-self: flex-end;
+        margin-left: auto;
+      }
+
+      .assistant-message {
+        background-color: var(--assistant-msg-bg);
+        align-self: flex-start;
+      }
+
+      .assistant-message .message-content {
+        overflow-x: auto;
+      }
+
+      .system-message {
+        background-color: var(--system-msg-bg);
+        align-self: center;
+        text-align: center;
+        font-style: italic;
+        max-width: 90%;
+      }
+
+      .sender {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .command-list {
+        margin-top: 12px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .command-header {
+        background-color: rgba(0, 0, 0, 0.3);
+        color: #80deea;
+        padding: 8px 12px;
+        margin: 0;
+        font-size: 1rem;
+        font-weight: bold;
+      }
+
+      .command-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .command-row td {
+        padding: 6px 12px;
+        vertical-align: top;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .command-row:last-child td {
+        border-bottom: none;
+      }
+
+      .command-name {
+        width: 100px;
+        color: #dda0dd;
+        font-weight: bold;
+      }
+
+      .command-desc {
+        color: #e0e0e0;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        margin: 0;
+      }
+
+      code {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+
+      .clear-button {
+        background-color: transparent;
+        color: #888;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      .disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .message-content {
+        line-height: 1.5;
+      }
+
+      .message-content pre {
+        background-color: #282c34;
+        border-radius: 5px;
+        padding: 10px;
+        overflow-x: auto;
+        color: #abb2bf;
+      }
+
+      .message-content code {
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      .message-content blockquote {
+        border-left: 3px solid #ccc;
+        margin-left: 0;
+        padding-left: 10px;
+        color: #666;
+      }
+
+      .suggestions-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .suggestion-button {
+        background-color: var(--suggestion-bg);
+        border: 1px solid rgba(16, 65, 104, 0.2);
+        border-radius: 15px;
+        padding: 5px 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s, transform 0.2s;
+      }
+
+      .suggestion-button:hover {
+        opacity: 1;
+        transform: translateY(-2px);
+      }
+
+      .console-output div {
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-width: 100%;
+      }
+
+      @media (max-width: 768px) {
+        .main-container {
+          flex-direction: column;
+        }
+
+        .chat-container,
+        .console-container {
+          flex: none;
+          height: 50%;
+        }
+
+        .chat-container {
+          border-right: none;
+          border-bottom: 1px solid var(--border-color);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <div class="logo">Vane Chat Interface</div>
+      <div class="connection-controls">
+        <div id="connectionStatus" class="connection-status disconnected">
+          Disconnected
+        </div>
+        <input
+          type="number"
+          id="portInput"
+          class="port-input"
+          value="8080"
+          min="1024"
+          max="65535"
+        />
+        <button id="connectButton" class="connect-button">Connect</button>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="chat-container">
+        <div class="chat-bg-pattern"></div>
+        <div class="header">
+          <span>Chat</span>
+          <button id="clearChatButton" class="clear-button">Clear Chat</button>
+        </div>
+        <div class="messages" id="messagesContainer"></div>
+        <div class="input-container">
+          <input
+            type="text"
+            class="message-input"
+            id="messageInput"
+            placeholder="Type your message here..."
+            autocomplete="off"
+            disabled
+          />
+          <button class="send-button disabled" id="sendButton" disabled>
+            Send
+          </button>
+        </div>
+      </div>
+      <div class="console-container">
+        <!-- <div class="console-pattern"></div> -->
+        <div class="header console-header">
+          <span>Console Output</span>
+          <button id="clearConsoleButton" class="clear-button">
+            Clear Console
+          </button>
+        </div>
+        <div id="consoleOutput" class="console-output">
+          <div class="console-line">
+            <span class="console-prefix">></span>
+            <span class="console-content"
+              >Welcome to Vane Chat Browser Interface</span
+            >
+          </div>
+          <div class="console-line">
+            <span class="console-prefix">></span>
+            <span class="console-content">To get started:</span>
+          </div>
+          <div class="console-line">
+            <span class="console-prefix">></span>
+            <span class="console-content"
+              >1. Start the CLI with 'vanekit chat' in project dir</span
+            >
+          </div>
+          <div class="console-line">
+            <span class="console-prefix">></span>
+            <span class="console-content"
+              >2. Enter the WebSocket port number (default: 8080)</span
+            >
+          </div>
+          <div class="console-line">
+            <span class="console-prefix">></span>
+            <span class="console-content"
+              >3. Click Connect to establish connection</span
+            >
+          </div>
+
+          <div class="command-list">
+            <h4 class="command-header">Quick Commands</h4>
+            <table class="command-table">
+              <tr class="command-row">
+                <td class="command-name">exit</td>
+                <td class="command-desc">Exit the chat (auto-saves)</td>
+              </tr>
+              <tr class="command-row">
+                <td class="command-name">clear</td>
+                <td class="command-desc">Clear the conversation history</td>
+              </tr>
+              <tr class="command-row">
+                <td class="command-name">build</td>
+                <td class="command-desc">Build the project</td>
+              </tr>
+              <tr class="command-row">
+                <td class="command-name">deploy</td>
+                <td class="command-desc">Deploy your website</td>
+              </tr>
+              <tr class="command-row">
+                <td class="command-name">help</td>
+                <td class="command-desc">Show help message</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // DOM Elements
+        const messagesContainer = document.getElementById("messagesContainer");
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+        const consoleOutput = document.getElementById("consoleOutput");
+        const connectionStatus = document.getElementById("connectionStatus");
+        const portInput = document.getElementById("portInput");
+        const connectButton = document.getElementById("connectButton");
+        const clearChatButton = document.getElementById("clearChatButton");
+        const clearConsoleButton =
+          document.getElementById("clearConsoleButton");
+
+        // Configure marked for safe rendering
+        marked.setOptions({
+          breaks: true,
+          gfm: true,
+          headerIds: false,
+          highlight: function (code, language) {
+            if (language && hljs.getLanguage(language)) {
+              try {
+                return hljs.highlight(code, { language }).value;
+              } catch (err) {}
+            }
+            return hljs.highlightAuto(code).value;
+          },
+        });
+
+        // Quick suggestion responses
+        const quickSuggestions = ["looks good", "proceed", "suggest one"];
+
+        // WebSocket state
+        let socket = null;
+        let isConnecting = false;
+
+        // Enhanced JSON message parsing function to handle all formats
+        function parseAssistantMessage(messageContent) {
+          console.log("Original message:", messageContent);
+
+          try {
+            // Case 1: Message is already an object with value property
+            if (typeof messageContent === "object" && messageContent !== null) {
+              if (messageContent.value) {
+                return messageContent.value;
+              }
+              // For objects that don't have a value property but have a type
+              if (
+                messageContent.type === "assistant" &&
+                messageContent.content
+              ) {
+                return messageContent.content;
+              }
+              // Return the object as is if it doesn't match known patterns
+              return messageContent;
+            }
+
+            // Case 2: Message is a string containing JSON
+            if (typeof messageContent === "string") {
+              // Check if it looks like JSON
+              let trimmed = messageContent.trim();
+              if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                try {
+                  // Try standard JSON parsing first
+                  const jsonObj = JSON.parse(trimmed);
+                  if (jsonObj.value) {
+                    return jsonObj.value;
+                  }
+                  if (jsonObj.type === "assistant" && jsonObj.content) {
+                    return jsonObj.content;
+                  }
+                  return jsonObj; // Return the whole object if no value property
+                } catch (jsonError) {
+                  console.log(
+                    "Regular JSON parsing failed, trying regex extraction:",
+                    jsonError
+                  );
+
+                  // -- Double quotes extraction patterns --
+
+                  // Handle escaped quotes and newlines with double quotes
+                  const valueMatchDouble = trimmed.match(
+                    /"value"\s*:\s*"((?:\\.|[^"\\])*)"}/
+                  );
+                  if (valueMatchDouble && valueMatchDouble[1]) {
+                    try {
+                      return JSON.parse('"' + valueMatchDouble[1] + '"');
+                    } catch (e) {
+                      console.log(
+                        "Failed to parse extracted double-quoted value:",
+                        e
+                      );
+                      return valueMatchDouble[1]; // Return raw extracted value as fallback
+                    }
+                  }
+
+                  // Simple pattern with double quotes (no escaping)
+                  const simpleMatchDouble = trimmed.match(/"value":"([^"]*)"}/);
+                  if (simpleMatchDouble && simpleMatchDouble[1]) {
+                    return simpleMatchDouble[1];
+                  }
+
+                  // -- Single quotes extraction patterns --
+
+                  // Handle value with single quotes {'type':'assistant','value':'text'}
+                  const valueMatchSingle = trimmed.match(
+                    /'value'\s*:\s*'((?:\\.|[^'\\])*)'}/
+                  );
+                  if (valueMatchSingle && valueMatchSingle[1]) {
+                    return valueMatchSingle[1].replace(/\\'/g, "'");
+                  }
+
+                  // Simple pattern with single quotes
+                  const simpleMatchSingle = trimmed.match(/'value':'([^']*)'}/);
+                  if (simpleMatchSingle && simpleMatchSingle[1]) {
+                    return simpleMatchSingle[1];
+                  }
+
+                  // -- Mixed quotes extraction patterns --
+
+                  // Handle mixed quotes: {"type":"assistant",'value':'text'}
+                  const mixedMatch1 = trimmed.match(
+                    /"value"\s*:\s*'((?:\\.|[^'\\])*)'}/
+                  );
+                  if (mixedMatch1 && mixedMatch1[1]) {
+                    return mixedMatch1[1].replace(/\\'/g, "'");
+                  }
+
+                  // Handle reversed mixed quotes: {'type':'assistant',"value":"text"}
+                  const mixedMatch2 = trimmed.match(
+                    /'value'\s*:\s*"((?:\\.|[^"\\])*)"}/
+                  );
+                  if (mixedMatch2 && mixedMatch2[1]) {
+                    try {
+                      return JSON.parse('"' + mixedMatch2[1] + '"');
+                    } catch (e) {
+                      return mixedMatch2[1];
+                    }
+                  }
+
+                  // -- Partial JSON extraction as last resort --
+                  // If we couldn't extract with regex, try to at least show the original message
+                  // This handles malformed JSON that might still be readable to the user
+                  if (
+                    trimmed.includes('"value"') ||
+                    trimmed.includes("'value'")
+                  ) {
+                    // Remove the outer JSON structure but preserve the message content
+                    return trimmed
+                      .replace(/^{.*?"value"\s*:\s*"|'}$/g, "")
+                      .replace(/"}$/g, "");
+                  }
+                }
+              }
+
+              // If it's a string but not JSON, return as is
+              return messageContent;
+            }
+
+            // Return original content if all parsing attempts fail
+            return messageContent || "";
+          } catch (e) {
+            console.error("Error in message parsing:", e);
+            // Return original content on any error, or empty string if null/undefined
+            return messageContent || "";
+          }
+        }
+
+        // Update UI based on connection status
+        function updateConnectionUI(status) {
+          connectionStatus.textContent = status;
+
+          switch (status) {
+            case "Connected":
+              connectionStatus.className = "connection-status connected";
+              messageInput.disabled = false;
+              sendButton.disabled = false;
+              sendButton.classList.remove("disabled");
+              connectButton.textContent = "Disconnect";
+              break;
+
+            case "Disconnected":
+              connectionStatus.className = "connection-status disconnected";
+              messageInput.disabled = true;
+              sendButton.disabled = true;
+              sendButton.classList.add("disabled");
+              connectButton.textContent = "Connect";
+              break;
+
+            case "Connecting...":
+              connectionStatus.className = "connection-status connecting";
+              messageInput.disabled = true;
+              sendButton.disabled = true;
+              sendButton.classList.add("disabled");
+              break;
+          }
+        }
+
+        // Connect to WebSocket server
+        function connectWebSocket() {
+          if (socket) {
+            // Already connected, disconnect first
+            disconnectWebSocket();
+            return;
+          }
+
+          isConnecting = true;
+          updateConnectionUI("Connecting...");
+
+          const port = portInput.value || "8080";
+          const wsUrl = `ws://localhost:${port}`;
+
+          addConsoleMessage(`Connecting to: ${wsUrl}`);
+
+          // Create new WebSocket connection
+          socket = new WebSocket(wsUrl);
+
+          // Handle WebSocket connection open
+          socket.addEventListener("open", (event) => {
+            updateConnectionUI("Connected");
+            addConsoleMessage("WebSocket connection established!");
+            addSystemMessage("Connected to Vane CLI. Type a message to begin.");
+            isConnecting = false;
+          });
+
+          // Handle WebSocket messages
+          socket.addEventListener("message", (event) => {
+            try {
+              const data = JSON.parse(event.data);
+
+              switch (data.type) {
+                case "system":
+                  addSystemMessage(data.content);
+                  addConsoleMessage(`SYSTEM: ${data.content}`);
+                  break;
+                case "user":
+                  addUserMessage(data.content);
+                  addConsoleMessage(`USER: ${data.content}`);
+                  break;
+                case "assistant":
+                  // Process and display assistant message using our enhanced parsing
+                  let messageContent = parseAssistantMessage(data.content);
+
+                  // Display the processed message content
+                  addAssistantMessage(messageContent);
+
+                  // For console, truncate long messages
+                  const truncated =
+                    typeof data.content === "string"
+                      ? data.content.substring(0, 100) +
+                        (data.content.length > 100 ? "..." : "")
+                      : JSON.stringify(data.content).substring(0, 100) + "...";
+
+                  addConsoleMessage(`ASSISTANT: ${truncated}`);
+
+                  // Add quick reply suggestions
+                  addSuggestions();
+                  break;
+                case "console":
+                  addConsoleMessage(data.content);
+                  break;
+                case "error":
+                  addSystemMessage(`Error: ${data.content}`);
+                  addConsoleMessage(`ERROR: ${data.content}`);
+                  break;
+                case "history":
+                  // Load conversation history
+                  if (Array.isArray(data.content)) {
+                    messagesContainer.innerHTML = "";
+                    data.content.forEach((item) => {
+                      if (item.role === "user") {
+                        addUserMessage(item.content);
+                      } else if (item.role === "assistant") {
+                        // Extract message from potential JSON using our enhanced parser
+                        let content = parseAssistantMessage(item.content);
+                        addAssistantMessage(content);
+                      } else if (item.role === "system") {
+                        addSystemMessage(item.content);
+                      }
+                    });
+                    addSystemMessage("Conversation history loaded.");
+                  }
+                  break;
+                default:
+                  addConsoleMessage(`Unknown message type: ${data.type}`);
+              }
+            } catch (error) {
+              console.error("Error processing message:", error, event.data);
+              addConsoleMessage(`Error parsing message: ${error.message}`);
+              addConsoleMessage(
+                `Raw message: ${
+                  typeof event.data === "string"
+                    ? event.data.substring(0, 100) +
+                      (event.data.length > 100 ? "..." : "")
+                    : "Non-string data"
+                }`
+              );
+
+              // Try to display raw message if JSON parsing fails
+              try {
+                if (
+                  typeof event.data === "string" &&
+                  event.data.includes('"type":"assistant"')
+                ) {
+                  const match = event.data.match(/"value":"([^"]*)"}/);
+                  if (match && match[1]) {
+                    addAssistantMessage(match[1]);
+                    addConsoleMessage("Attempted fallback display of message");
+                  }
+                }
+              } catch (e) {
+                console.error("Fallback display also failed:", e);
+              }
+            }
+          });
+
+          // Handle WebSocket errors
+          socket.addEventListener("error", (event) => {
+            updateConnectionUI("Disconnected");
+            addSystemMessage(
+              "Connection error. Please check if the CLI WebSocket server is running."
+            );
+            addConsoleMessage(`WebSocket ERROR: Connection failed`);
+            socket = null;
+            isConnecting = false;
+          });
+
+          // Handle WebSocket close
+          socket.addEventListener("close", (event) => {
+            updateConnectionUI("Disconnected");
+            addSystemMessage("Connection closed. Click Connect to reconnect.");
+            addConsoleMessage(
+              `WebSocket connection closed. Code: ${event.code}`
+            );
+            socket = null;
+            isConnecting = false;
+          });
+        }
+
+        // Disconnect from WebSocket server
+        function disconnectWebSocket() {
+          if (socket) {
+            socket.close();
+            socket = null;
+            updateConnectionUI("Disconnected");
+            addSystemMessage("Disconnected from Vane CLI.");
+          }
+        }
+
+        // Send message function
+        function sendMessage(message = null) {
+          const messageToSend = message || messageInput.value.trim();
+          if (messageToSend && socket && socket.readyState === WebSocket.OPEN) {
+            // Send to WebSocket server
+            socket.send(
+              JSON.stringify({
+                type: "user-message",
+                content: messageToSend,
+              })
+            );
+
+            // Add to UI
+            addUserMessage(messageToSend);
+
+            // Clear input and suggestions
+            messageInput.value = "";
+            clearSuggestions();
+          }
+        }
+
+        // Add message helpers
+        function addUserMessage(content) {
+          const messageDiv = document.createElement("div");
+          messageDiv.className = "message user-message";
+
+          const senderDiv = document.createElement("div");
+          senderDiv.className = "sender";
+          senderDiv.textContent = "You";
+
+          const contentDiv = document.createElement("div");
+          contentDiv.textContent = content;
+
+          messageDiv.appendChild(senderDiv);
+          messageDiv.appendChild(contentDiv);
+          messagesContainer.appendChild(messageDiv);
+
+          scrollToBottom(messagesContainer);
+        }
+
+        function addAssistantMessage(content) {
+          console.log("Rendering assistant message:", content);
+
+          const messageDiv = document.createElement("div");
+          messageDiv.className = "message assistant-message";
+
+          const senderDiv = document.createElement("div");
+          senderDiv.className = "sender";
+          senderDiv.textContent = "Assistant";
+
+          const contentDiv = document.createElement("div");
+          contentDiv.className = "message-content";
+
+          // Use marked to render markdown in the content
+          try {
+            // If content is not a string, stringify it
+            if (typeof content !== "string") {
+              content = JSON.stringify(content, null, 2);
+            }
+
+            // Process backtick code blocks - Replace ` with ```
+            content = content.replace(
+              /`(javascript|python|json|html|css)\n([\s\S]*?)\n`/g,
+              "```$1\n$2\n```"
+            );
+
+            // Process inline code with language
+            content = content.replace(/`([\s\S]*?)`/g, "```\n$1\n```");
+
+            // Process numbered lists with quotes that might be causing issues
+            content = content.replace(/(\d+\.\s+")(.*?)(")/g, "$1$2$3");
+
+            // Fix potential markdown rendering issues with backticks
+            contentDiv.innerHTML = marked.parse(content);
+          } catch (e) {
+            console.error("Markdown parsing error:", e);
+            // If markdown parsing fails, fallback to plain text
+            contentDiv.textContent = content;
+          }
+
+          messageDiv.appendChild(senderDiv);
+          messageDiv.appendChild(contentDiv);
+          messagesContainer.appendChild(messageDiv);
+
+          // Apply syntax highlighting to code blocks
+          messageDiv.querySelectorAll("pre code").forEach((block) => {
+            hljs.highlightElement(block);
+          });
+
+          scrollToBottom(messagesContainer);
+        }
+
+        function addSystemMessage(content) {
+          const messageDiv = document.createElement("div");
+          messageDiv.className = "message system-message";
+          messageDiv.textContent = content;
+          messagesContainer.appendChild(messageDiv);
+
+          scrollToBottom(messagesContainer);
+        }
+
+        function addConsoleMessage(content) {
+          // Create a structured console line
+          const line = document.createElement("div");
+          line.className = "console-line";
+
+          // Add prefix
+          const prefix = document.createElement("span");
+          prefix.className = "console-prefix";
+          prefix.textContent = ">";
+
+          // Add content
+          const messageContent = document.createElement("span");
+          messageContent.className = "console-content";
+          messageContent.textContent = content;
+
+          // Assemble and add to console
+          line.appendChild(prefix);
+          line.appendChild(messageContent);
+          consoleOutput.appendChild(line);
+
+          // Scroll console to bottom
+          scrollToBottom(consoleOutput);
+        }
+
+        function addSuggestions() {
+          // Clear existing suggestions first
+          clearSuggestions();
+
+          // Create suggestions container
+          const suggestionsContainer = document.createElement("div");
+          suggestionsContainer.className = "suggestions-container";
+
+          // Add each suggestion button
+          quickSuggestions.forEach((suggestion) => {
+            const button = document.createElement("button");
+            button.className = "suggestion-button";
+            button.textContent = suggestion;
+            button.addEventListener("click", () => {
+              sendMessage(suggestion);
+            });
+            suggestionsContainer.appendChild(button);
+          });
+
+          // Add to the last assistant message
+          const assistantMessages =
+            document.querySelectorAll(".assistant-message");
+          if (assistantMessages.length > 0) {
+            const lastMessage = assistantMessages[assistantMessages.length - 1];
+            lastMessage.appendChild(suggestionsContainer);
+          }
+        }
+
+        function clearSuggestions() {
+          const existingSuggestions = document.querySelectorAll(
+            ".suggestions-container"
+          );
+          existingSuggestions.forEach((container) => container.remove());
+        }
+
+        function scrollToBottom(element) {
+          element.scrollTop = element.scrollHeight;
+        }
+
+        // Clear functions
+        function clearChat() {
+          messagesContainer.innerHTML = "";
+          addSystemMessage("Chat cleared");
+          clearSuggestions();
+        }
+
+        function clearConsole() {
+          consoleOutput.innerHTML = "";
+
+          // Add initial message after clearing
+          addConsoleMessage("Console cleared");
+
+          // Recreate the command table
+          addCommandList();
+        }
+
+        // Helper function to add the command list table
+        function addCommandList() {
+          const commands = [
+            { name: "exit", desc: "Exit the chat (auto-saves)" },
+            { name: "clear", desc: "Clear the conversation history" },
+            { name: "build", desc: "Build the project" },
+            { name: "deploy", desc: "Deploy your website" },
+            { name: "help", desc: "Show help message" },
+          ];
+
+          // Create command list container
+          const cmdList = document.createElement("div");
+          cmdList.className = "command-list";
+
+          // Add header
+          const header = document.createElement("h4");
+          header.className = "command-header";
+          header.textContent = "Quick Commands";
+          cmdList.appendChild(header);
+
+          // Create table
+          const table = document.createElement("table");
+          table.className = "command-table";
+
+          // Add each command row
+          commands.forEach((cmd) => {
+            const row = document.createElement("tr");
+            row.className = "command-row";
+
+            const nameCell = document.createElement("td");
+            nameCell.className = "command-name";
+            nameCell.textContent = cmd.name;
+
+            const descCell = document.createElement("td");
+            descCell.className = "command-desc";
+            descCell.textContent = cmd.desc;
+
+            row.appendChild(nameCell);
+            row.appendChild(descCell);
+            table.appendChild(row);
+          });
+
+          cmdList.appendChild(table);
+          consoleOutput.appendChild(cmdList);
+        }
+
+        // Event listeners
+        connectButton.addEventListener("click", () => {
+          if (socket) {
+            disconnectWebSocket();
+          } else {
+            connectWebSocket();
+          }
+        });
+
+        sendButton.addEventListener("click", () => sendMessage());
+
+        messageInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+          }
+        });
+
+        clearChatButton.addEventListener("click", clearChat);
+        clearConsoleButton.addEventListener("click", clearConsole);
+
+        // Initialize with disconnected status
+        updateConnectionUI("Disconnected");
+        addSystemMessage("Welcome to Vane Chat. Click Connect to start.");
+      });
+    </script>
+  </body>
+</html>
